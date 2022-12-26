@@ -1,0 +1,34 @@
+[
+    {
+        "nodeType": "Stmt_Expression",
+        "attributes": {
+            "startLine": 3,
+            "endLine": 3
+        },
+        "expr": {
+            "nodeType": "Expr_Assign",
+            "attributes": {
+                "startLine": 3,
+                "endLine": 3
+            },
+            "var": {
+                "nodeType": "Expr_Variable",
+                "attributes": {
+                    "startLine": 3,
+                    "endLine": 3
+                },
+                "name": "a"
+            },
+            "expr": {
+                "nodeType": "Scalar_String",
+                "attributes": {
+                    "startLine": 3,
+                    "endLine": 3,
+                    "kind": 2,
+                    "rawValue": "\"\""
+                },
+                "value": ""
+            }
+        }
+    }
+]
