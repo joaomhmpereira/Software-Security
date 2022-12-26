@@ -4,8 +4,14 @@ from AST.expr_assign import Expr_Assign
 from AST.expr_variable import Expr_Variable
 from AST.bexpr_greater import BExpr_Greater
 from AST.bexpr_smaller import BExpr_Smaller
+from AST.bexpr_equal import BExpr_Equal
+from AST.bexpr_plus import BExpr_Plus
+from AST.stmt_if import Stmt_If
 from AST.stmt_else import Stmt_Else
 from AST.stmt_nop import Stmt_Nop
+from AST.stmt_break import Stmt_Break
+from AST.name import Name
+from AST.expr_funccall import Expr_FuncCall
 
 # for coloured output
 class bcolors:
@@ -45,7 +51,7 @@ def main(argv, arg):
     #parsed_pattern = json.loads(json_pattern)
 
     parsed_ast = json.loads(json_ast)
-    print(parsed_ast)
+    #print(parsed_ast)
     
     #create the AST nodes for the corresponding json
     create_nodes(parsed_ast)
@@ -110,10 +116,33 @@ def create_nodes(parsed_ast):
             right = create_nodes(parsed_ast['right'])
             return BExpr_Smaller(left, right)
         
+        # <--- EXP BINARY EQUAL --->
+        elif (node_type == "Expr_BinaryOp_Equal"):
+            print(bcolors.OKGREEN + node_type + bcolors.ENDC)
+            left = create_nodes(parsed_ast['left'])
+            right = create_nodes(parsed_ast['right'])
+            return BExpr_Equal(left, right)
+
+        # <--- EXP BINARY PLUS --->
+        elif (node_type == "Expr_BinaryOp_Plus"):
+            print(bcolors.OKGREEN + node_type + bcolors.ENDC)
+            left = create_nodes(parsed_ast['left'])
+            right = create_nodes(parsed_ast['right'])
+            return BExpr_Plus(left, right)
+
         # <--- SCALAR LNUMBER --->
         elif (node_type == "Scalar_LNumber"):
             print(bcolors.OKGREEN + node_type + bcolors.ENDC)
             return Stmt_Expression(parsed_ast['value'])
+
+        # <--- IF --->
+        elif (node_type == "Stmt_If"):
+            print(bcolors.OKGREEN + node_type + bcolors.ENDC)
+            cond = create_nodes(parsed_ast['cond'])
+            stmts = create_nodes(parsed_ast['stmts'])
+            elseifs = create_nodes(parsed_ast['elseifs'])
+            else_clause = create_nodes(parsed_ast['else'])
+            return Stmt_If(cond, stmts, elseifs, else_clause)
         
         # <--- STMT ELSE --->
         elif (node_type == "Stmt_Else"):
@@ -121,10 +150,33 @@ def create_nodes(parsed_ast):
             stmts = create_nodes(parsed_ast['stmts'])
             return Stmt_Else(stmts)
         
+        # <--- FUNCTION CALL --->
+        elif (node_type == "Expr_FuncCall"):
+            print(bcolors.OKGREEN + node_type + bcolors.ENDC)
+            name = create_nodes(parsed_ast['name'])
+            args = []
+            for arg in parsed_ast['args']:
+                args.append(create_nodes(arg))
+
+            return Expr_FuncCall(name, args)
+
+        # <--- NAME --->
+        elif (node_type == "Name"):
+            print(bcolors.OKGREEN + node_type + bcolors.ENDC)
+            return Name(parsed_ast['parts'])
+
+        # <--- BREAK --->
+        elif (node_type == "Stmt_Break"):
+            print(bcolors.OKGREEN + node_type + bcolors.ENDC)
+            return Stmt_Break(parsed_ast['num'])
+
         # <--- STMT NOP --->
         elif (node_type == "Stmt_Nop"):
             print(bcolors.OKGREEN + node_type + bcolors.ENDC)
             return Stmt_Nop()
+        
+        else: # discard the node
+            return None
         
 if __name__== "__main__":
     main(sys.argv, len(sys.argv))
