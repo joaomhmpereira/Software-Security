@@ -4,4 +4,4 @@ class BExpr_Not_Equal:
         self.right = right
 
     def __str__(self) -> str:
-        return 'Not Equal({} == {})'.format(self.left, self.right)
+        return 'Not Equal({} != {})'.format(self.left, self.right)

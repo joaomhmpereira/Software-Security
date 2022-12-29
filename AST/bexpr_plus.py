@@ -4,4 +4,4 @@ class BExpr_Plus:
         self.right = right
 
     def __str__(self) -> str:
-        return 'Plus({} > {})'.format(self.left, self.right)
+        return 'Plus({} + {})'.format(self.left, self.right)

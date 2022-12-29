@@ -4,4 +4,4 @@ class BExpr_Concat:
         self.right = right
 
     def __str__(self) -> str:
-        return 'Concat({} > {})'.format(self.left, self.right)
+        return 'Concat({} . {})'.format(self.left, self.right)
