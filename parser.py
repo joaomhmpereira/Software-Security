@@ -5,10 +5,13 @@ from AST.expr_variable import Expr_Variable
 from AST.bexpr_greater import BExpr_Greater
 from AST.bexpr_smaller import BExpr_Smaller
 from AST.bexpr_equal import BExpr_Equal
+from AST.bexpr_not_equal import BExpr_Not_Equal
+from AST.bexpr_concat import BExpr_Concat
 from AST.bexpr_plus import BExpr_Plus
 from AST.stmt_if import Stmt_If
 from AST.stmt_else import Stmt_Else
 from AST.stmt_nop import Stmt_Nop
+from AST.stmt_while import Stmt_While
 from AST.stmt_break import Stmt_Break
 from AST.name import Name
 from AST.expr_funccall import Expr_FuncCall
@@ -123,12 +126,26 @@ def create_nodes(parsed_ast):
             right = create_nodes(parsed_ast['right'])
             return BExpr_Equal(left, right)
 
+        # <--- EXP BINARY NOT EQUAL --->
+        elif (node_type == "Expr_BinaryOp_NotEqual"):
+            print(bcolors.OKGREEN + node_type + bcolors.ENDC)
+            left = create_nodes(parsed_ast['left'])
+            right = create_nodes(parsed_ast['right'])
+            return BExpr_Not_Equal(left, right)
+
         # <--- EXP BINARY PLUS --->
         elif (node_type == "Expr_BinaryOp_Plus"):
             print(bcolors.OKGREEN + node_type + bcolors.ENDC)
             left = create_nodes(parsed_ast['left'])
             right = create_nodes(parsed_ast['right'])
             return BExpr_Plus(left, right)
+
+        # <--- EXP BINARY CONCAT --->
+        elif (node_type == "Expr_BinaryOp_Concat"):
+            print(bcolors.OKGREEN + node_type + bcolors.ENDC)
+            left = create_nodes(parsed_ast['left'])
+            right = create_nodes(parsed_ast['right'])
+            return BExpr_Concat(left, right)
 
         # <--- SCALAR LNUMBER --->
         elif (node_type == "Scalar_LNumber"):
@@ -174,6 +191,13 @@ def create_nodes(parsed_ast):
         elif (node_type == "Stmt_Nop"):
             print(bcolors.OKGREEN + node_type + bcolors.ENDC)
             return Stmt_Nop()
+
+        # <--- STMT WHILE --->
+        elif (node_type == "Stmt_While"):
+            print(bcolors.OKGREEN + node_type + bcolors.ENDC)
+            cond = create_nodes(parsed_ast['cond'])
+            stmts = create_nodes(parsed_ast['stmts'])
+            return Stmt_While(cond, stmts)
         
         else: # discard the node
             return None
