@@ -83,7 +83,7 @@ def create_nodes(parsed_ast):
 
         for instruction in instructions:
             print(bcolors.HEADER + "Instruction: " +  bcolors.ENDC + str(instruction))
-
+                
     elif (type(parsed_ast) == dict):    # if we receive a single instruction
         #print(bcolors.OKCYAN + "parsed_ast is a dict" + bcolors.ENDC)
         # get the type of the node we're analyzing
