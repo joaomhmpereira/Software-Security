@@ -15,6 +15,7 @@ from AST.stmt_while import Stmt_While
 from AST.stmt_break import Stmt_Break
 from AST.name import Name
 from AST.expr_funccall import Expr_FuncCall
+from policy import Policy
 
 # for coloured output
 class bcolors:
@@ -31,12 +32,12 @@ class bcolors:
 
 def main(argv, arg):
     
-    #check the number of arguments received
+    # check the number of arguments received
     if (arg != 3):
         print(bcolors.FAIL + "Usage: python parser.py <code_slice>.json <vuln_patter>.json" + bcolors.ENDC)
         sys.exit(1)
 
-    #get ast_slice content
+    # get ast_slice content
     try:
         with open(argv[1], 'r') as file:
             json_ast = file.read()
@@ -44,19 +45,29 @@ def main(argv, arg):
         print(bcolors.FAIL + "File containing AST slice not found." + bcolors.ENDC)
         sys.exit(1)
     
-    #try:
-    #    with open(argv[2], 'r') as file:
-    #        json_pattern = file.read()
-    #except FileNotFoundError:
-    #    print(bcolors.FAIL + "File containing vulnerability pattern not found." + bcolors.ENDC)
-    #    sys.exit(1)
+    # get pattern content
+    try:
+       with open(argv[2], 'r') as file:
+            json_pattern = file.read()
+    except FileNotFoundError:
+        print(bcolors.FAIL + "File containing vulnerability pattern not found." + bcolors.ENDC)
+        sys.exit(1)
 
-    #parsed_pattern = json.loads(json_pattern)
-
-    parsed_ast = json.loads(json_ast)
-    #print(parsed_ast)
+    parsed_pattern = json.loads(json_pattern)
     
-    #create the AST nodes for the corresponding json
+    # create vulnerabilities from pattern
+    # TODO
+    # vulnerabilities = []
+    
+    # create policies for each vulnerability
+    # policies = []
+    # for vulnerability in vulnerabilities:
+    #     policy = Policy(vulnerability.get_sources(), vulnerability)
+    #     policies.append(policy)
+        
+    parsed_ast = json.loads(json_ast)
+    
+    # create the AST nodes for the corresponding json
     create_nodes(parsed_ast)
 
 def create_nodes(parsed_ast):

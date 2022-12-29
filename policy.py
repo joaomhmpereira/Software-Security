@@ -1,7 +1,8 @@
 class Policy():
-    def __init__(self, S):
+    def __init__(self, S, vulnerability):
         self.top = S
         self.bottom = []
+        self.vulnerability = vulnerability
     
     def glb(self, set1, set2):
         '''
@@ -36,5 +37,8 @@ class Policy():
             for j in range(i):
                 ret.append(set0[j: i])
         return ret
+    
+    def get_vulnerability(self):
+        return self.vulnerability
     
     
