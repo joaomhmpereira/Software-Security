@@ -41,4 +41,5 @@ class Policy():
     def get_vulnerability(self):
         return self.vulnerability
     
-    
+    def __str__(self) -> str:
+        return 'Policy({})'.format(str(self.vulnerability))

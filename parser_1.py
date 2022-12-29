@@ -15,7 +15,9 @@ from AST.stmt_while import Stmt_While
 from AST.stmt_break import Stmt_Break
 from AST.name import Name
 from AST.expr_funccall import Expr_FuncCall
+from AST.symbol import Symbol_Table
 from policy import Policy
+from vulnerability import Vulnerability
 
 # for coloured output
 class bcolors:
@@ -53,37 +55,53 @@ def main(argv, arg):
         print(bcolors.FAIL + "File containing vulnerability pattern not found." + bcolors.ENDC)
         sys.exit(1)
 
-    parsed_pattern = json.loads(json_pattern)
+    parsed_patterns = json.loads(json_pattern)
+    parsed_ast = json.loads(json_ast)
+
+    # get output filename
+    # slices_ast/1a-basic-flow.json -> output/1a-basic-flow.output.json
+    B = [x for x in argv[1].split('/') if x.strip()]
+    B = [x for x in B[1].split('.') if x.strip()]
+    output_file = 'output/' + B[0] + '.output.json'
     
     # create vulnerabilities from pattern
-    # TODO
-    # vulnerabilities = []
-    
-    # create policies for each vulnerability
-    # policies = []
-    # for vulnerability in vulnerabilities:
-    #     policy = Policy(vulnerability.get_sources(), vulnerability)
-    #     policies.append(policy)
-        
-    parsed_ast = json.loads(json_ast)
-    
-    # create the AST nodes for the corresponding json
-    create_nodes(parsed_ast)
+    vulnerabilities = []
+    for pattern in parsed_patterns:
+        vulnerabilities.append(Vulnerability(pattern['vulnerability'], pattern['sources'], pattern['sanitizers'], pattern['sinks'], pattern['implicit'], output_file))
 
-def create_nodes(parsed_ast):
+    # create policies for each vulnerability
+    policies = []
+    for vulnerability in vulnerabilities:
+        policy = Policy(vulnerability.get_sources(), vulnerability)
+        policies.append(policy)
+        
+    for policy in policies:
+        print(policy)
+        # create the AST nodes for the corresponding json
+        symbol_table = Symbol_Table()
+        create_nodes(parsed_ast, symbol_table, policy)
+
+def create_nodes(parsed_ast, symbol_table=None, policy=None):
     """
     Given a json, parse it and create the corresponding AST nodes
     """
+    # print s
+    if symbol_table:
+        print(bcolors.OKCYAN + "=======")
+        print(symbol_table)
+        print("=======" + bcolors.ENDC)
+
     #print(bcolors.OKBLUE + "Inside create_nodes" + bcolors.ENDC)
     if (type(parsed_ast) == list):  # if we receive a list of instructions (list of dictionaries)
         #print(bcolors.OKCYAN + "parsed_ast is a list" + bcolors.ENDC)
         instructions = []
         for instruction in parsed_ast:
-            instructions.append(create_nodes(instruction)) #create the nodes for each instruction
+            instructions.append(create_nodes(instruction, symbol_table, policy)) #create the nodes for each instruction
 
         for instruction in instructions:
             print(bcolors.HEADER + "Instruction: " +  bcolors.ENDC + str(instruction))
-                
+        return instructions
+
     elif (type(parsed_ast) == dict):    # if we receive a single instruction
         #print(bcolors.OKCYAN + "parsed_ast is a dict" + bcolors.ENDC)
         # get the type of the node we're analyzing
@@ -93,21 +111,27 @@ def create_nodes(parsed_ast):
         if (node_type == "Stmt_Expression"):
             #print(parsed_ast)
             print(bcolors.OKGREEN + node_type + bcolors.ENDC)
-            return Stmt_Expression(create_nodes(parsed_ast['expr']))
+            return Stmt_Expression(create_nodes(parsed_ast['expr'], symbol_table, policy))
         
         # <--- ASSIGNMENT --->
         elif (node_type == "Expr_Assign"):
             #print(parsed_ast)
             print(bcolors.OKGREEN + node_type + bcolors.ENDC)
-            lval = create_nodes(parsed_ast['var'])
-            rval = create_nodes(parsed_ast['expr'])
+            lval = create_nodes(parsed_ast['var'], symbol_table, policy)
+            rval = create_nodes(parsed_ast['expr'], symbol_table, policy)
             return Expr_Assign(lval, rval)
         
         # <--- VARIABLE --->
         elif (node_type == "Expr_Variable"):
             #print(parsed_ast)
             print(bcolors.OKGREEN + node_type + bcolors.ENDC)
-            return Expr_Variable(parsed_ast['name'])
+            variable = symbol_table.getVariable(parsed_ast['name'])
+            if variable is None:
+                print('variable is not in symtable')
+                variable = Expr_Variable(parsed_ast['name'])
+                symbol_table.addVariable(variable)
+            
+            return variable
         
         # <--- STRING --->
         elif (node_type == "Scalar_String"):
@@ -119,43 +143,43 @@ def create_nodes(parsed_ast):
         elif (node_type == "Expr_BinaryOp_Greater"):
             print("aqui")
             print(bcolors.OKGREEN + node_type + bcolors.ENDC)
-            left = create_nodes(parsed_ast['left'])
-            right = create_nodes(parsed_ast['right'])
+            left = create_nodes(parsed_ast['left'], symbol_table, policy)
+            right = create_nodes(parsed_ast['right'], symbol_table, policy)
             return BExpr_Greater(left, right)
         
         # <--- EXP BINARY SMALLER --->
         elif (node_type == "Expr_BinaryOp_Smaller"):
             print(bcolors.OKGREEN + node_type + bcolors.ENDC)
-            left = create_nodes(parsed_ast['left'])
-            right = create_nodes(parsed_ast['right'])
+            left = create_nodes(parsed_ast['left'], symbol_table, policy)
+            right = create_nodes(parsed_ast['right'], symbol_table, policy)
             return BExpr_Smaller(left, right)
         
         # <--- EXP BINARY EQUAL --->
         elif (node_type == "Expr_BinaryOp_Equal"):
             print(bcolors.OKGREEN + node_type + bcolors.ENDC)
-            left = create_nodes(parsed_ast['left'])
-            right = create_nodes(parsed_ast['right'])
+            left = create_nodes(parsed_ast['left'], symbol_table, policy)
+            right = create_nodes(parsed_ast['right'], symbol_table, policy)
             return BExpr_Equal(left, right)
 
         # <--- EXP BINARY NOT EQUAL --->
         elif (node_type == "Expr_BinaryOp_NotEqual"):
             print(bcolors.OKGREEN + node_type + bcolors.ENDC)
-            left = create_nodes(parsed_ast['left'])
-            right = create_nodes(parsed_ast['right'])
+            left = create_nodes(parsed_ast['left'], symbol_table, policy)
+            right = create_nodes(parsed_ast['right'], symbol_table, policy)
             return BExpr_Not_Equal(left, right)
 
         # <--- EXP BINARY PLUS --->
         elif (node_type == "Expr_BinaryOp_Plus"):
             print(bcolors.OKGREEN + node_type + bcolors.ENDC)
-            left = create_nodes(parsed_ast['left'])
-            right = create_nodes(parsed_ast['right'])
+            left = create_nodes(parsed_ast['left'], symbol_table, policy)
+            right = create_nodes(parsed_ast['right'], symbol_table, policy)
             return BExpr_Plus(left, right)
 
         # <--- EXP BINARY CONCAT --->
         elif (node_type == "Expr_BinaryOp_Concat"):
             print(bcolors.OKGREEN + node_type + bcolors.ENDC)
-            left = create_nodes(parsed_ast['left'])
-            right = create_nodes(parsed_ast['right'])
+            left = create_nodes(parsed_ast['left'], symbol_table, policy)
+            right = create_nodes(parsed_ast['right'], symbol_table, policy)
             return BExpr_Concat(left, right)
 
         # <--- SCALAR LNUMBER --->
@@ -166,26 +190,23 @@ def create_nodes(parsed_ast):
         # <--- IF --->
         elif (node_type == "Stmt_If"):
             print(bcolors.OKGREEN + node_type + bcolors.ENDC)
-            cond = create_nodes(parsed_ast['cond'])
-            stmts = create_nodes(parsed_ast['stmts'])
-            elseifs = create_nodes(parsed_ast['elseifs'])
-            else_clause = create_nodes(parsed_ast['else'])
+            cond = create_nodes(parsed_ast['cond'], symbol_table, policy)
+            stmts = create_nodes(parsed_ast['stmts'], symbol_table, policy)
+            elseifs = create_nodes(parsed_ast['elseifs'], symbol_table, policy)
+            else_clause = create_nodes(parsed_ast['else'], symbol_table, policy)
             return Stmt_If(cond, stmts, elseifs, else_clause)
         
         # <--- STMT ELSE --->
         elif (node_type == "Stmt_Else"):
             print(bcolors.OKGREEN + node_type + bcolors.ENDC)
-            stmts = create_nodes(parsed_ast['stmts'])
+            stmts = create_nodes(parsed_ast['stmts'], symbol_table, policy)
             return Stmt_Else(stmts)
         
         # <--- FUNCTION CALL --->
         elif (node_type == "Expr_FuncCall"):
             print(bcolors.OKGREEN + node_type + bcolors.ENDC)
-            name = create_nodes(parsed_ast['name'])
-            args = []
-            for arg in parsed_ast['args']:
-                args.append(create_nodes(arg))
-
+            name = create_nodes(parsed_ast['name'], symbol_table, policy)
+            args = create_nodes(parsed_ast['args'], symbol_table, policy)
             return Expr_FuncCall(name, args)
 
         # <--- NAME --->
@@ -206,8 +227,8 @@ def create_nodes(parsed_ast):
         # <--- STMT WHILE --->
         elif (node_type == "Stmt_While"):
             print(bcolors.OKGREEN + node_type + bcolors.ENDC)
-            cond = create_nodes(parsed_ast['cond'])
-            stmts = create_nodes(parsed_ast['stmts'])
+            cond = create_nodes(parsed_ast['cond'], symbol_table, policy)
+            stmts = create_nodes(parsed_ast['stmts'], symbol_table, policy)
             return Stmt_While(cond, stmts)
         
         else: # discard the node
