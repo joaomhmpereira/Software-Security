@@ -14,6 +14,7 @@ from AST.stmt_nop import Stmt_Nop
 from AST.stmt_while import Stmt_While
 from AST.stmt_break import Stmt_Break
 from AST.name import Name
+from AST.arg import Arg
 from AST.expr_funccall import Expr_FuncCall
 from AST.symbol import Symbol_Table
 from policy import Policy
@@ -213,6 +214,12 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None):
         elif (node_type == "Name"):
             print(bcolors.OKGREEN + node_type + bcolors.ENDC)
             return Name(parsed_ast['parts'])
+
+        # <--- ARG --->
+        elif (node_type == "Arg"):
+            print(bcolors.OKGREEN + node_type + bcolors.ENDC)
+            value = create_nodes(parsed_ast['value'], symbol_table, policy)
+            return Arg(value)
 
         # <--- BREAK --->
         elif (node_type == "Stmt_Break"):
