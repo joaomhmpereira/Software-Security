@@ -32,7 +32,6 @@ class bcolors:
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
 
-
 def main(argv, arg):
     
     # check the number of arguments received
@@ -207,11 +206,12 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None):
         elif (node_type == "Expr_FuncCall"):
             print(bcolors.OKGREEN + node_type + bcolors.ENDC)
             name = create_nodes(parsed_ast['name'], symbol_table, policy)
+                        
             args_list = parsed_ast['args']
             args = []
             for arg in args_list:
                 args.append(create_nodes(arg, symbol_table, policy))
-            return Expr_FuncCall(name, args)
+            return Expr_FuncCall(name, args, policy.get_funtype(name))
 
         # <--- NAME --->
         elif (node_type == "Name"):

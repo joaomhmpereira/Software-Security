@@ -41,5 +41,8 @@ class Policy():
     def get_vulnerability(self):
         return self.vulnerability
     
+    def get_funtype(self, name):
+        return self.vulnerability.get_funtype(name)
+        
     def __str__(self) -> str:
         return 'Policy({})'.format(str(self.vulnerability))
