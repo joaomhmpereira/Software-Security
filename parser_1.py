@@ -207,7 +207,10 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None):
         elif (node_type == "Expr_FuncCall"):
             print(bcolors.OKGREEN + node_type + bcolors.ENDC)
             name = create_nodes(parsed_ast['name'], symbol_table, policy)
-            args = create_nodes(parsed_ast['args'], symbol_table, policy)
+            args_list = parsed_ast['args']
+            args = []
+            for arg in args_list:
+                args.append(create_nodes(arg, symbol_table, policy))
             return Expr_FuncCall(name, args)
 
         # <--- NAME --->
