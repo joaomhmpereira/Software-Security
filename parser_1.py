@@ -74,13 +74,18 @@ def main(argv, arg):
     for vulnerability in vulnerabilities:
         policy = Policy(vulnerability.get_sources(), vulnerability)
         policies.append(policy)
-        
+    
+    output = [] 
     for policy in policies:
         print(policy)
         # create the AST nodes for the corresponding json
         symbol_table = Symbol_Table()
         create_nodes(parsed_ast, symbol_table, policy)
-
+        output += policy.get_vulnerability().output
+    
+    with open(output_file, 'w') as outfile:
+        json.dump(output, outfile, ensure_ascii=False, indent=4)
+        
 def create_nodes(parsed_ast, symbol_table=None, policy=None):
     """
     Given a json, parse it and create the corresponding AST nodes
@@ -115,22 +120,51 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None):
         
         # <--- ASSIGNMENT --->
         elif (node_type == "Expr_Assign"):
-            #print(parsed_ast)
             print(bcolors.OKGREEN + node_type + bcolors.ENDC)
             lval = create_nodes(parsed_ast['var'], symbol_table, policy)
             rval = create_nodes(parsed_ast['expr'], symbol_table, policy)
+            
+            # initialized variables: remove from source
+            if not lval.is_source():
+                lval.del_source(lval.name)
+            
+            # ------------------------------ #
+            # Assigning to a funCall result: #
+            # ------------------------------ #
+            if isinstance(rval, Expr_FuncCall):
+                # append source
+                if rval.is_source():
+                    lval.add_source(rval.name)
+            # ------------------------------ #
+            # Assigning to another variable: #
+            # ------------------------------ #
+            elif isinstance(rval, Expr_Variable):
+                # append sources
+                sources = policy.lub(lval.get_sources(), rval.get_sources())
+                lval.set_sources(sources)
+            
+            # explicit leaks
+            if isinstance(rval, Expr_FuncCall) or isinstance(rval, Expr_Variable):
+                n_sources = rval.get_sources()
+                if lval.is_sink() and n_sources > 0:
+                    for n in range(n_sources):
+                        policy.get_vulnerability().add_instance(rval.get_sources()[n], lval.name, len(rval.get_sanitizers()) == 0, rval.get_sanitizers())
+
             return Expr_Assign(lval, rval)
         
         # <--- VARIABLE --->
         elif (node_type == "Expr_Variable"):
             #print(parsed_ast)
             print(bcolors.OKGREEN + node_type + bcolors.ENDC)
-            variable = symbol_table.getVariable(parsed_ast['name'])
+            name = "$" + parsed_ast['name']
+            variable = symbol_table.getVariable(name)
+            
             if variable is None:
                 print('variable is not in symtable')
-                variable = Expr_Variable(parsed_ast['name'])
+                variable = Expr_Variable(name, policy.get_vultype(name))
                 symbol_table.addVariable(variable)
-            
+                print(variable.name)
+                print(variable.get_sources())
             return variable
         
         # <--- STRING --->
@@ -205,13 +239,23 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None):
         # <--- FUNCTION CALL --->
         elif (node_type == "Expr_FuncCall"):
             print(bcolors.OKGREEN + node_type + bcolors.ENDC)
-            name = create_nodes(parsed_ast['name'], symbol_table, policy)
-                        
+            name = parsed_ast['name']['parts'][0]
+            
             args_list = parsed_ast['args']
             args = []
             for arg in args_list:
                 args.append(create_nodes(arg, symbol_table, policy))
-            return Expr_FuncCall(name, args, policy.get_funtype(name))
+            
+            funcall = Expr_FuncCall(name, args, policy.get_vultype(name))
+            
+            for arg in args:
+                n_sources = len(arg.value.get_sources())
+                for n in range(n_sources):
+                    funcall.set_sources(policy.lub(funcall.get_sources(), arg.value.get_sources()))
+                    if funcall.is_sink():
+                        policy.get_vulnerability().add_instance(arg.value.get_sources()[n], funcall.name, len(arg.value.get_sanitizers()) == 0, arg.value.get_sanitizers())
+                
+            return funcall
 
         # <--- NAME --->
         elif (node_type == "Name"):
