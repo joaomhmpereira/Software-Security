@@ -146,8 +146,8 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None):
             # explicit leaks
             if isinstance(rval, Expr_FuncCall) or isinstance(rval, Expr_Variable):
                 n_sources = rval.get_sources()
-                if lval.is_sink() and n_sources > 0:
-                    for n in range(n_sources):
+                if lval.is_sink() and len(n_sources) > 0:
+                    for n in range(len(n_sources)):
                         policy.get_vulnerability().add_instance(rval.get_sources()[n], lval.name, len(rval.get_sanitizers()) == 0, rval.get_sanitizers())
 
             return Expr_Assign(lval, rval)
@@ -163,8 +163,6 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None):
                 print('variable is not in symtable')
                 variable = Expr_Variable(name, policy.get_vultype(name))
                 symbol_table.addVariable(variable)
-                print(variable.name)
-                print(variable.get_sources())
             return variable
         
         # <--- STRING --->
@@ -175,7 +173,6 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None):
 
         # <--- EXP BINARY GREATER --->
         elif (node_type == "Expr_BinaryOp_Greater"):
-            print("aqui")
             print(bcolors.OKGREEN + node_type + bcolors.ENDC)
             left = create_nodes(parsed_ast['left'], symbol_table, policy)
             right = create_nodes(parsed_ast['right'], symbol_table, policy)
@@ -250,9 +247,9 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None):
             
             for arg in args:
                 n_sources = len(arg.value.get_sources())
-                for n in range(n_sources):
-                    funcall.set_sources(policy.lub(funcall.get_sources(), arg.value.get_sources()))
-                    if funcall.is_sink():
+                funcall.set_sources(policy.lub(funcall.get_sources(), arg.value.get_sources()))
+                if funcall.is_sink():
+                    for n in range(n_sources):
                         policy.get_vulnerability().add_instance(arg.value.get_sources()[n], funcall.name, len(arg.value.get_sanitizers()) == 0, arg.value.get_sanitizers())
                 
             return funcall
