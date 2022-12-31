@@ -19,6 +19,7 @@ from AST.expr_funccall import Expr_FuncCall
 from AST.symbol import Symbol_Table
 from policy import Policy
 from vulnerability import Vulnerability
+from copy import deepcopy
 
 # for coloured output
 class bcolors:
@@ -127,6 +128,8 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None):
             # initialized variables: remove from source
             if not lval.is_source():
                 lval.del_source(lval.name)
+
+            print(bcolors.WARNING + str(rval) + bcolors.ENDC)
                             
             # ------------------------------ #
             # Assigning to a funCall result: #
@@ -141,10 +144,15 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None):
             #if isinstance(rval, Expr_Variable):
                 # append sources
             sources = policy.lub(lval.get_sources(), rval.get_sources())
-            sanitizers = policy.lub(lval.get_sanitizers(), rval.get_sanitizers())
+            #sanitizers = policy.lub(lval.get_sanitizers(), rval.get_sanitizers())
             sanitized_sources = policy.lub(lval.get_sanitized_sources(), rval.get_sanitized_sources())
             lval.set_sources(sources)
-            lval.set_sanitizers(sanitizers)
+
+            for sanitizer in rval.get_sanitizers():
+                if sanitizer not in lval.sanitizers:
+                    lval.sanitizers.append(sanitizer)
+            #lval.set_sanitizers(sanitizers)
+            #lval.sanitizers = rval.sanitizers
             lval.set_sanitized_sources(sanitized_sources)
             
             # explicit leaks
@@ -152,12 +160,17 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None):
                 if lval.is_sink():
                     for source in rval.get_sources():
                         print(bcolors.HEADER + "Outputing vuln without san flows" + bcolors.ENDC)
-                        policy.get_vulnerability().add_instance(source, lval.name, True, [])                            
+                        source_copy = deepcopy(source)
+                        name_copy = deepcopy(lval.name)
+                        policy.get_vulnerability().add_instance(source_copy, name_copy, True, [])                            
                     
                     for sanitized_source in rval.get_sanitized_sources():
                         print(bcolors.HEADER + "Outputing vuln witho san flows" + bcolors.ENDC)
                         print(bcolors.WARNING + "SANITIZERS ASSIGNMENT: " + str(rval.get_sanitizers()) + bcolors.ENDC)
-                        policy.get_vulnerability().add_instance(sanitized_source, lval.name, False, rval.get_sanitizers())
+                        sanitized_source_copy = deepcopy(sanitized_source)
+                        name_copy = deepcopy(lval.name)
+                        sanitizers_list_copy = deepcopy(rval.get_sanitizers())
+                        policy.get_vulnerability().add_instance(sanitized_source_copy, name_copy, False, sanitizers_list_copy)
 
             return Expr_Assign(lval, rval)
         
@@ -244,15 +257,17 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None):
         
         # <--- FUNCTION CALL --->
         elif (node_type == "Expr_FuncCall"):
-            print(bcolors.OKGREEN + node_type + bcolors.ENDC)
             name = parsed_ast['name']['parts'][0]
-            
+            print(bcolors.OKGREEN + node_type + " -> " + name + bcolors.ENDC)
             args_list = parsed_ast['args']
             args = []
             for arg in args_list:
                 args.append(create_nodes(arg, symbol_table, policy))
             
             funcall = Expr_FuncCall(name, args, policy.get_vultype(name))
+            
+            if funcall.is_sanitizer():
+                funcall.sanitizers.append([funcall.get_name()])
 
             """
             sources contain sources from unsanitized flows
@@ -262,24 +277,33 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None):
                 print(bcolors.FAIL + "Arg: " + str(arg) + bcolors.ENDC)
                 print(bcolors.OKBLUE + "Funccal: " + str(funcall) + bcolors.ENDC)
                 funcall.set_sources(policy.lub(funcall.get_sources(), arg.get_sources()))
-                funcall.set_sanitizers(policy.lub(funcall.get_sanitizers(), arg.get_sanitizers()))
+                #funcall.set_sanitizers(policy.lub(funcall.get_sanitizers(), arg.get_sanitizers()))
+                for sanitizer in arg.get_sanitizers():
+                    if funcall.is_sanitizer():
+                        sanitizer.extend(funcall.get_name())
+                    funcall.sanitizers.append(sanitizer)
                 funcall.set_sanitized_sources(policy.lub(funcall.get_sanitized_sources(), arg.get_sanitized_sources()))
                 if funcall.is_sink():
                     for source in arg.get_sources():    
                         print(bcolors.HEADER + "Outputing vuln without san flows" + bcolors.ENDC)
-                        policy.get_vulnerability().add_instance(source, funcall.name, True, [])                            
+                        source_copy = deepcopy(source)
+                        funcall_name_copy = deepcopy(funcall.name)
+                        policy.get_vulnerability().add_instance(source_copy, funcall_name_copy, True, [])                            
                     
                     for sanitized_source in arg.get_sanitized_sources():
                         print(bcolors.HEADER + "Outputing vuln with san flows" + bcolors.ENDC)
                         print(bcolors.WARNING + "SANITIZERS FCALL: " + str(arg.get_sanitizers()) + bcolors.ENDC)
-                        policy.get_vulnerability().add_instance(sanitized_source, funcall.name, False, arg.get_sanitizers())
+                        sanitized_source_copy = deepcopy(sanitized_source)
+                        funcall_name_copy = deepcopy(funcall.name)
+                        sanitizers_list_copy = deepcopy(arg.get_sanitizers())
+                        policy.get_vulnerability().add_instance(sanitized_source_copy, funcall_name_copy, False, sanitizers_list_copy)
 
             if funcall.is_sanitizer():
-                funcall.sanitizers.append(funcall.get_name())
+                #funcall.sanitizers.append(funcall.get_name())
                 funcall.add_sanitized_sources(funcall.get_sources())
                 funcall.sources = []    # limpar as sources, todas as sources foram sanitized
-                print(bcolors.FAIL + str(funcall.get_sanitized_sources()) + bcolors.ENDC)
-                print(bcolors.FAIL + "sources: " + str(funcall.get_sources()) + bcolors.ENDC)
+                print(bcolors.FAIL + "san sources" + str(funcall.get_sanitized_sources()) + bcolors.ENDC)
+                print(bcolors.FAIL + "unsan sources: " + str(funcall.get_sources()) + bcolors.ENDC)
 
             return funcall
 

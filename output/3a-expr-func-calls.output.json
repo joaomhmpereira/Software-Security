@@ -28,6 +28,9 @@
         "unsanitized flows": "no",
         "sanitized flows": [
             [
+                "d"
+            ],
+            [
                 "e",
                 "d"
             ]
