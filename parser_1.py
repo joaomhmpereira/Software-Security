@@ -121,42 +121,51 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None):
         # <--- ASSIGNMENT --->
         elif (node_type == "Expr_Assign"):
             print(bcolors.OKGREEN + node_type + bcolors.ENDC)
-            lval = create_nodes(parsed_ast['var'], symbol_table, policy)
             rval = create_nodes(parsed_ast['expr'], symbol_table, policy)
+            lval = create_nodes(parsed_ast['var'], symbol_table, policy)
             
             # initialized variables: remove from source
             if not lval.is_source():
                 lval.del_source(lval.name)
-            
+                            
             # ------------------------------ #
             # Assigning to a funCall result: #
             # ------------------------------ #
-            if isinstance(rval, Expr_FuncCall):
-                # append source
-                if rval.is_source():
-                    lval.add_source(rval.name)
+            #if isinstance(rval, Expr_FuncCall):
+            #    # append source
+            #    if rval.is_source():
+            #        lval.add_source(rval.name)
             # ------------------------------ #
             # Assigning to another variable: #
             # ------------------------------ #
-            elif isinstance(rval, Expr_Variable):
+            #if isinstance(rval, Expr_Variable):
                 # append sources
-                sources = policy.lub(lval.get_sources(), rval.get_sources())
-                lval.set_sources(sources)
+            sources = policy.lub(lval.get_sources(), rval.get_sources())
+            sanitizers = policy.lub(lval.get_sanitizers(), rval.get_sanitizers())
+            sanitized_sources = policy.lub(lval.get_sanitized_sources(), rval.get_sanitized_sources())
+            lval.set_sources(sources)
+            lval.set_sanitizers(sanitizers)
+            lval.set_sanitized_sources(sanitized_sources)
             
             # explicit leaks
             if isinstance(rval, Expr_FuncCall) or isinstance(rval, Expr_Variable):
-                n_sources = rval.get_sources()
-                if lval.is_sink() and len(n_sources) > 0:
-                    for n in range(len(n_sources)):
-                        policy.get_vulnerability().add_instance(rval.get_sources()[n], lval.name, len(rval.get_sanitizers()) == 0, rval.get_sanitizers())
+                if lval.is_sink():
+                    for source in rval.get_sources():
+                        print(bcolors.HEADER + "Outputing vuln without san flows" + bcolors.ENDC)
+                        policy.get_vulnerability().add_instance(source, lval.name, True, [])                            
+                    
+                    for sanitized_source in rval.get_sanitized_sources():
+                        print(bcolors.HEADER + "Outputing vuln witho san flows" + bcolors.ENDC)
+                        print(bcolors.WARNING + "SANITIZERS ASSIGNMENT: " + str(rval.get_sanitizers()) + bcolors.ENDC)
+                        policy.get_vulnerability().add_instance(sanitized_source, lval.name, False, rval.get_sanitizers())
 
             return Expr_Assign(lval, rval)
         
         # <--- VARIABLE --->
         elif (node_type == "Expr_Variable"):
             #print(parsed_ast)
-            print(bcolors.OKGREEN + node_type + bcolors.ENDC)
             name = "$" + parsed_ast['name']
+            print(bcolors.OKGREEN + node_type + " -> " + name + bcolors.ENDC)
             variable = symbol_table.getVariable(name)
             
             if variable is None:
@@ -244,14 +253,34 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None):
                 args.append(create_nodes(arg, symbol_table, policy))
             
             funcall = Expr_FuncCall(name, args, policy.get_vultype(name))
-            
+
+            """
+            sources contain sources from unsanitized flows
+            sanitized_sources contain sources from sanitized flows
+            """
             for arg in args:
-                n_sources = len(arg.value.get_sources())
-                funcall.set_sources(policy.lub(funcall.get_sources(), arg.value.get_sources()))
+                print(bcolors.FAIL + "Arg: " + str(arg) + bcolors.ENDC)
+                print(bcolors.OKBLUE + "Funccal: " + str(funcall) + bcolors.ENDC)
+                funcall.set_sources(policy.lub(funcall.get_sources(), arg.get_sources()))
+                funcall.set_sanitizers(policy.lub(funcall.get_sanitizers(), arg.get_sanitizers()))
+                funcall.set_sanitized_sources(policy.lub(funcall.get_sanitized_sources(), arg.get_sanitized_sources()))
                 if funcall.is_sink():
-                    for n in range(n_sources):
-                        policy.get_vulnerability().add_instance(arg.value.get_sources()[n], funcall.name, len(arg.value.get_sanitizers()) == 0, arg.value.get_sanitizers())
-                
+                    for source in arg.get_sources():    
+                        print(bcolors.HEADER + "Outputing vuln without san flows" + bcolors.ENDC)
+                        policy.get_vulnerability().add_instance(source, funcall.name, True, [])                            
+                    
+                    for sanitized_source in arg.get_sanitized_sources():
+                        print(bcolors.HEADER + "Outputing vuln with san flows" + bcolors.ENDC)
+                        print(bcolors.WARNING + "SANITIZERS FCALL: " + str(arg.get_sanitizers()) + bcolors.ENDC)
+                        policy.get_vulnerability().add_instance(sanitized_source, funcall.name, False, arg.get_sanitizers())
+
+            if funcall.is_sanitizer():
+                funcall.sanitizers.append(funcall.get_name())
+                funcall.add_sanitized_sources(funcall.get_sources())
+                funcall.sources = []    # limpar as sources, todas as sources foram sanitized
+                print(bcolors.FAIL + str(funcall.get_sanitized_sources()) + bcolors.ENDC)
+                print(bcolors.FAIL + "sources: " + str(funcall.get_sources()) + bcolors.ENDC)
+
             return funcall
 
         # <--- NAME --->

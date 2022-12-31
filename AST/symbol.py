@@ -14,5 +14,5 @@ class Symbol_Table:
     def __str__(self):
         s = "< "
         for var in self.variables:
-            s += str(var) + ", "
+            s += str(var) + " | "
         return s + ">"

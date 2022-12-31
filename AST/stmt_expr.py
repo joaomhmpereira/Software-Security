@@ -3,6 +3,7 @@ class Stmt_Expression:
         self.expr = expr
         self.sources = []
         self.sanitizers = []
+        self.sanitized_sources = []
     
     def add_source(self, source) -> None:
         if source not in self.sources:
@@ -20,6 +21,15 @@ class Stmt_Expression:
     
     def set_sources(self, sources) -> list:
         self.sources = sources
+    
+    def get_sanitized_sources(self) -> list:
+        return self.sanitized_sources
+
+    def add_sanitized_sources(self, sources) -> None:
+        self.sanitized_sources.extend(sources)
+    
+    def set_sanitized_sources(self, sanitized_sources) -> None:
+        self.sanitized_sources = sanitized_sources
 
     def __str__(self) -> str:
         return 'Stmt_Expression({})'.format(self.expr)

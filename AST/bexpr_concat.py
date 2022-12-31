@@ -4,6 +4,7 @@ class BExpr_Concat:
         self.right = right
         self.sources = self.left.sources + self.right.sources
         self.sanitizers = self.left.sanitizers + self.right.sanitizers
+        self.sanitized_sources = self.left.sanitized_sources + self.right.sanitized_sources
 
     def add_source(self, source) -> None:
         if source not in self.sources:
