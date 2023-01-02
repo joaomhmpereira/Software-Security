@@ -50,8 +50,8 @@ class Symbol_Table:
         
         return [symtable_to_return, common_variables]
     
-    def add_missing_variables(self, other_sym, commonList):
-        for variable in other_sym.variables:
+    def add_missing_variables(self, other_symbol_table, commonList):
+        for variable in other_symbol_table.get_variables():
             # variables that are not on the common list have not been initialized in self.symtable
             # so we'll treat them as sources
             if variable not in commonList:  

@@ -1,38 +1,9 @@
 [
     {
         "vulnerability": "A",
-        "source": "b",
-        "sink": "t",
-        "unsanitized flows": "yes",
-        "sanitized flows": []
-    },
-    {
-        "vulnerability": "A",
-        "source": "b",
-        "sink": "w",
-        "unsanitized flows": "no",
-        "sanitized flows": [
-            [
-                "s"
-            ]
-        ]
-    },
-    {
-        "vulnerability": "A",
         "source": "$i",
         "sink": "t",
         "unsanitized flows": "yes",
         "sanitized flows": []
-    },
-    {
-        "vulnerability": "A",
-        "source": "$i",
-        "sink": "w",
-        "unsanitized flows": "no",
-        "sanitized flows": [
-            [
-                "s"
-            ]
-        ]
     }
 ]
