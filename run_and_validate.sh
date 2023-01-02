@@ -2,7 +2,6 @@
 # 
 # Run 'chmod +x run_and_validate.sh' to add permissions
 # File: run_and_validate.sh
-# Author: Joao Pereira
 
 
 # colours
