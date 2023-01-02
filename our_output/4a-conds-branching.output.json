@@ -1,6 +1,13 @@
 [
     {
         "vulnerability": "A",
+        "source": "f",
+        "sink": "e",
+        "unsanitized flows": "yes",
+        "sanitized flows": []
+    },
+    {
+        "vulnerability": "A",
         "source": "$a",
         "sink": "e",
         "unsanitized flows": "yes",
@@ -23,6 +30,13 @@
     {
         "vulnerability": "B",
         "source": "$a",
+        "sink": "e",
+        "unsanitized flows": "yes",
+        "sanitized flows": []
+    },
+    {
+        "vulnerability": "B",
+        "source": "d",
         "sink": "e",
         "unsanitized flows": "yes",
         "sanitized flows": []
