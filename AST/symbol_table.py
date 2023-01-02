@@ -14,12 +14,12 @@ class Symbol_Table:
                 return variable
         return None
     
-    def merge_symbols(self, other, policy) -> list:
+    def merge_symbols(self, other_symbol_table, policy) -> list:
         symtable_to_return = Symbol_Table()
         common_variables = []
         for variable in self.variables:
             # check if it's common
-            other_variable = other.get_variable(variable.name)
+            other_variable = other_symbol_table.get_variable(variable.get_name())
             if other_variable is not None: # it's common...
                 if variable.is_tainted():
                     if other_variable.is_tainted():
@@ -43,7 +43,7 @@ class Symbol_Table:
                 symtable_to_return.add_variable(variable) 
                 
         # variables only in other: add to symtable
-        for other_variable in other.variables:
+        for other_variable in other_symbol_table.get_variables():
             variable = symtable_to_return.get_variable(other_variable.get_name())
             if variable is None:
                 symtable_to_return.add_variable(other_variable)
