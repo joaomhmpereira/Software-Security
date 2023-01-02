@@ -130,29 +130,16 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None):
                 lval.del_source(lval.name)
 
             print(bcolors.WARNING + str(rval) + bcolors.ENDC)
-                            
-            # ------------------------------ #
-            # Assigning to a funCall result: #
-            # ------------------------------ #
-            #if isinstance(rval, Expr_FuncCall):
-            #    # append source
-            #    if rval.is_source():
-            #        lval.add_source(rval.name)
-            # ------------------------------ #
-            # Assigning to another variable: #
-            # ------------------------------ #
-            #if isinstance(rval, Expr_Variable):
-                # append sources
+             
             sources = policy.lub(lval.get_sources(), rval.get_sources())
-            #sanitizers = policy.lub(lval.get_sanitizers(), rval.get_sanitizers())
+
             sanitized_sources = policy.lub(lval.get_sanitized_sources(), rval.get_sanitized_sources())
             lval.set_sources(sources)
 
             for sanitizer in rval.get_sanitizers():
                 if sanitizer not in lval.sanitizers:
                     lval.sanitizers.append(sanitizer)
-            #lval.set_sanitizers(sanitizers)
-            #lval.sanitizers = rval.sanitizers
+
             lval.set_sanitized_sources(sanitized_sources)
             
             # explicit leaks
