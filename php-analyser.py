@@ -63,7 +63,7 @@ def main(argv, arg):
     # slices_ast/1a-basic-flow.json -> output/1a-basic-flow.output.json
     B = [x for x in argv[1].split('/') if x.strip()]
     B = [x for x in B[1].split('.') if x.strip()]
-    output_file = 'output/' + B[0] + '.output.json'
+    output_file = 'our_output/' + B[0] + '.output.json'
     
     # create vulnerabilities from pattern
     vulnerabilities = []
@@ -83,6 +83,7 @@ def main(argv, arg):
         symbol_table = Symbol_Table()
         create_nodes(parsed_ast, symbol_table, policy)
         output += policy.get_vulnerability().output
+        print("NEW POLICY!!!!!!!")
     
     with open(output_file, 'w') as outfile:
         json.dump(output, outfile, ensure_ascii=False, indent=4)
@@ -166,12 +167,12 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None):
             #print(parsed_ast)
             name = "$" + parsed_ast['name']
             print(bcolors.OKGREEN + node_type + " -> " + name + bcolors.ENDC)
-            variable = symbol_table.getVariable(name)
+            variable = symbol_table.get_variable(name)
             
             if variable is None:
                 print('variable is not in symtable')
                 variable = Expr_Variable(name, policy.get_vultype(name))
-                symbol_table.addVariable(variable)
+                symbol_table.add_variable(variable)
             return variable
         
         # <--- STRING --->
@@ -231,9 +232,30 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None):
         elif (node_type == "Stmt_If"):
             print(bcolors.OKGREEN + node_type + bcolors.ENDC)
             cond = create_nodes(parsed_ast['cond'], symbol_table, policy)
-            stmts = create_nodes(parsed_ast['stmts'], symbol_table, policy)
-            elseifs = create_nodes(parsed_ast['elseifs'], symbol_table, policy)
-            else_clause = create_nodes(parsed_ast['else'], symbol_table, policy)
+            
+            symbol_table_if = deepcopy(symbol_table)
+            symbol_table_else = deepcopy(symbol_table)
+            
+            stmts = create_nodes(parsed_ast['stmts'], symbol_table_if, policy)
+            
+            elseif_list = parsed_ast['elseifs']
+            elseifs = []
+            symbol_table_elseifs = []
+            for elseif in elseif_list:
+                symbol_table_elseif = deepcopy(symbol_table)
+                elseifs.append(create_nodes(elseif, symbol_table_elseif, policy))
+                symbol_table_elseifs.append(symbol_table_elseif)
+            
+            else_clause = create_nodes(parsed_ast['else'], symbol_table_else, policy)
+            
+            print(bcolors.WARNING + "IF symtable " + str(symbol_table_if) + bcolors.ENDC)
+            print(bcolors.WARNING + "ELSE symtable " + str(symbol_table_else) + bcolors.ENDC)
+
+            symbol_table = symbol_table_if.merge_symbols(symbol_table_else, policy)
+            #for symbol_table_elseif in symbol_table_elseifs:
+            #    symbol_table = symbol_table.merge_symbols(symbol_table_elseif, policy)
+            
+            print(bcolors.FAIL + str(symbol_table) + bcolors.ENDC)
             return Stmt_If(cond, stmts, elseifs, else_clause)
         
         # <--- STMT ELSE --->
@@ -287,6 +309,8 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None):
                         policy.get_vulnerability().add_instance(sanitized_source_copy, funcall_name_copy, False, sanitizers_list_copy)
 
             if funcall.is_sanitizer():
+                for arg in args:
+                    arg.sanitizers = funcall.sanitizers
                 funcall.add_sanitized_sources(funcall.get_sources())
                 funcall.sources = []    # limpar as sources, todas as sources foram sanitized
                 print(bcolors.FAIL + "san sources" + str(funcall.get_sanitized_sources()) + bcolors.ENDC)

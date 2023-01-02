@@ -43,6 +43,9 @@ class Expr_Variable:
     
     def is_sanitizer(self) -> bool:
         return self.type == "sanitizer"
+    
+    def is_tainted(self) -> bool:
+        return len(self.sources) > 0
         
     def __str__(self) -> str:
         return 'Variable "{}", VSources: {}, VSanitizers: {}, VSanSources: {}'.format(self.name, self.sources, self.sanitizers, self.sanitized_sources)
