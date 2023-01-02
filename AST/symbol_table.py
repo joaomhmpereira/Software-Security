@@ -18,6 +18,7 @@ class Symbol_Table:
         print(self)
         print("leonor!!!!!!!!!!!!")
         print(other)
+        print("vars in self: " + str(self.variables))
         for variable in self.variables:
             # check if it's common
             other_variable = other.get_variable(variable.name)
@@ -42,14 +43,15 @@ class Symbol_Table:
             else:
                 result.add_variable(variable) 
         
+        # variables only in other: add to result
         for other_variable in other.variables:
             variable = result.get_variable(other_variable.name)
             if variable is None:
-                result.add_variable(variable)
+                result.add_variable(other_variable)
         
         return result
                 
-    def __str__(self):
+    def __repr__(self):
         s = "< "
         for var in self.variables:
             s += str(var) + " | "

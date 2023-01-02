@@ -16,7 +16,8 @@ from AST.stmt_break import Stmt_Break
 from AST.name import Name
 from AST.arg import Arg
 from AST.expr_funccall import Expr_FuncCall
-from AST.symbol import Symbol_Table
+from AST.symbol_table import Symbol_Table
+from AST.symbol_stack import Symbol_Stack
 from policy import Policy
 from vulnerability import Vulnerability
 from copy import deepcopy
@@ -79,31 +80,34 @@ def main(argv, arg):
     output = [] 
     for policy in policies:
         print(policy)
-        # create the AST nodes for the corresponding json
         symbol_table = Symbol_Table()
-        create_nodes(parsed_ast, symbol_table, policy)
+        # create the AST nodes for the corresponding json
+        create_nodes(parsed_ast, symbol_table, Symbol_Stack(symbol_table), policy)
         output += policy.get_vulnerability().output
-        print("NEW POLICY!!!!!!!")
     
     with open(output_file, 'w') as outfile:
         json.dump(output, outfile, ensure_ascii=False, indent=4)
         
-def create_nodes(parsed_ast, symbol_table=None, policy=None):
+def create_nodes(parsed_ast, symbol_table=None, symbol_stack=None, policy=None):
     """
     Given a json, parse it and create the corresponding AST nodes
     """
     # print s
+    if not isinstance(symbol_stack.get_tail(), list):
+        symbol_table = symbol_table.merge_symbols(symbol_stack.get_tail(), policy)
+
     if symbol_table:
         print(bcolors.OKCYAN + "=======")
         print(symbol_table)
         print("=======" + bcolors.ENDC)
+    
 
     #print(bcolors.OKBLUE + "Inside create_nodes" + bcolors.ENDC)
     if (type(parsed_ast) == list):  # if we receive a list of instructions (list of dictionaries)
         #print(bcolors.OKCYAN + "parsed_ast is a list" + bcolors.ENDC)
         instructions = []
         for instruction in parsed_ast:
-            instructions.append(create_nodes(instruction, symbol_table, policy)) #create the nodes for each instruction
+            instructions.append(create_nodes(instruction, symbol_table, symbol_stack, policy)) #create the nodes for each instruction
 
         for instruction in instructions:
             print(bcolors.HEADER + "Instruction: " +  bcolors.ENDC + str(instruction))
@@ -118,13 +122,13 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None):
         if (node_type == "Stmt_Expression"):
             #print(parsed_ast)
             print(bcolors.OKGREEN + node_type + bcolors.ENDC)
-            return Stmt_Expression(create_nodes(parsed_ast['expr'], symbol_table, policy))
+            return Stmt_Expression(create_nodes(parsed_ast['expr'], symbol_table, symbol_stack, policy))
         
         # <--- ASSIGNMENT --->
         elif (node_type == "Expr_Assign"):
             print(bcolors.OKGREEN + node_type + bcolors.ENDC)
-            rval = create_nodes(parsed_ast['expr'], symbol_table, policy)
-            lval = create_nodes(parsed_ast['var'], symbol_table, policy)
+            rval = create_nodes(parsed_ast['expr'], symbol_table, symbol_stack, policy)
+            lval = create_nodes(parsed_ast['var'], symbol_table, symbol_stack, policy)
             
             # initialized variables: remove from source
             if not lval.is_source():
@@ -184,43 +188,43 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None):
         # <--- EXP BINARY GREATER --->
         elif (node_type == "Expr_BinaryOp_Greater"):
             print(bcolors.OKGREEN + node_type + bcolors.ENDC)
-            left = create_nodes(parsed_ast['left'], symbol_table, policy)
-            right = create_nodes(parsed_ast['right'], symbol_table, policy)
+            left = create_nodes(parsed_ast['left'], symbol_table, symbol_stack, policy)
+            right = create_nodes(parsed_ast['right'], symbol_table, symbol_stack, policy)
             return BExpr_Greater(left, right)
         
         # <--- EXP BINARY SMALLER --->
         elif (node_type == "Expr_BinaryOp_Smaller"):
             print(bcolors.OKGREEN + node_type + bcolors.ENDC)
-            left = create_nodes(parsed_ast['left'], symbol_table, policy)
-            right = create_nodes(parsed_ast['right'], symbol_table, policy)
+            left = create_nodes(parsed_ast['left'], symbol_table, symbol_stack, policy)
+            right = create_nodes(parsed_ast['right'], symbol_table, symbol_stack, policy)
             return BExpr_Smaller(left, right)
         
         # <--- EXP BINARY EQUAL --->
         elif (node_type == "Expr_BinaryOp_Equal"):
             print(bcolors.OKGREEN + node_type + bcolors.ENDC)
-            left = create_nodes(parsed_ast['left'], symbol_table, policy)
-            right = create_nodes(parsed_ast['right'], symbol_table, policy)
+            left = create_nodes(parsed_ast['left'], symbol_table, symbol_stack, policy)
+            right = create_nodes(parsed_ast['right'], symbol_table, symbol_stack, policy)
             return BExpr_Equal(left, right)
 
         # <--- EXP BINARY NOT EQUAL --->
         elif (node_type == "Expr_BinaryOp_NotEqual"):
             print(bcolors.OKGREEN + node_type + bcolors.ENDC)
-            left = create_nodes(parsed_ast['left'], symbol_table, policy)
-            right = create_nodes(parsed_ast['right'], symbol_table, policy)
+            left = create_nodes(parsed_ast['left'], symbol_table, symbol_stack, policy)
+            right = create_nodes(parsed_ast['right'], symbol_table, symbol_stack, policy)
             return BExpr_Not_Equal(left, right)
 
         # <--- EXP BINARY PLUS --->
         elif (node_type == "Expr_BinaryOp_Plus"):
             print(bcolors.OKGREEN + node_type + bcolors.ENDC)
-            left = create_nodes(parsed_ast['left'], symbol_table, policy)
-            right = create_nodes(parsed_ast['right'], symbol_table, policy)
+            left = create_nodes(parsed_ast['left'], symbol_table, symbol_stack, policy)
+            right = create_nodes(parsed_ast['right'], symbol_table, symbol_stack, policy)
             return BExpr_Plus(left, right)
 
         # <--- EXP BINARY CONCAT --->
         elif (node_type == "Expr_BinaryOp_Concat"):
             print(bcolors.OKGREEN + node_type + bcolors.ENDC)
-            left = create_nodes(parsed_ast['left'], symbol_table, policy)
-            right = create_nodes(parsed_ast['right'], symbol_table, policy)
+            left = create_nodes(parsed_ast['left'], symbol_table, symbol_stack, policy)
+            right = create_nodes(parsed_ast['right'], symbol_table, symbol_stack, policy)
             return BExpr_Concat(left, right)
 
         # <--- SCALAR LNUMBER --->
@@ -231,39 +235,80 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None):
         # <--- IF --->
         elif (node_type == "Stmt_If"):
             print(bcolors.OKGREEN + node_type + bcolors.ENDC)
-            cond = create_nodes(parsed_ast['cond'], symbol_table, policy)
+            print("======== BEGIN ========")
+            print(bcolors.FAIL + str(symbol_table) + bcolors.ENDC)
+            print("=======================")
+            cond = create_nodes(parsed_ast['cond'], symbol_table, symbol_stack, policy)
             
             symbol_table_if = deepcopy(symbol_table)
             symbol_table_else = deepcopy(symbol_table)
             
-            stmts = create_nodes(parsed_ast['stmts'], symbol_table_if, policy)
+            # join all symtables and push to symstack
+            element = [symbol_table_if, symbol_table_else]
+            # if len(symbol_table_elseifs) > 0:
+            #     element.extend(symbol_table_elseifs)
+            symbol_stack.push(element)
             
-            elseif_list = parsed_ast['elseifs']
-            elseifs = []
-            symbol_table_elseifs = []
-            for elseif in elseif_list:
-                symbol_table_elseif = deepcopy(symbol_table)
-                elseifs.append(create_nodes(elseif, symbol_table_elseif, policy))
-                symbol_table_elseifs.append(symbol_table_elseif)
+            print("Symbol stack::::" + str(symbol_stack))
             
-            else_clause = create_nodes(parsed_ast['else'], symbol_table_else, policy)
-            
-            print(bcolors.WARNING + "IF symtable " + str(symbol_table_if) + bcolors.ENDC)
-            print(bcolors.WARNING + "ELSE symtable " + str(symbol_table_else) + bcolors.ENDC)
+            stmts = create_nodes(parsed_ast['stmts'], symbol_table_if, symbol_stack, policy)
 
-            symbol_table = symbol_table_if.merge_symbols(symbol_table_else, policy)
-            #for symbol_table_elseif in symbol_table_elseifs:
-            #    symbol_table = symbol_table.merge_symbols(symbol_table_elseif, policy)
-            
-            print(bcolors.FAIL + str(symbol_table) + bcolors.ENDC)
-            return Stmt_If(cond, stmts, elseifs, else_clause)
-        
+            print(bcolors.OKBLUE + "SYMBOL TABLEEEEE" + str(symbol_table) + bcolors.ENDC)
+
+            if parsed_ast['else'] is not None:
+                else_clause = create_nodes(parsed_ast['else'], symbol_table_else, symbol_stack, policy)
+
+                print(bcolors.HEADER + str(stmts) + bcolors.ENDC)
+                print("saí do create nodes")
+                elseif_list = parsed_ast['elseifs']
+                elseifs = []
+                symbol_table_elseifs = []
+                for elseif in elseif_list:
+                    symbol_table_elseif = deepcopy(symbol_table)
+                    elseifs.append(create_nodes(elseif, symbol_table_elseif, symbol_stack, policy))
+                    symbol_table_elseifs.append(symbol_table_elseif)
+                
+                print(bcolors.WARNING + "IF symtable " + str(symbol_table_if) + bcolors.ENDC)
+                print(bcolors.WARNING + "ELSE symtable " + str(symbol_table_else) + bcolors.ENDC)
+                
+                last = symbol_stack.pop()
+                last_merged = Symbol_Table()
+                for el in last:
+                    last_merged = last_merged.merge_symbols(el, policy)
+                print("LAST MERGED::::" + str(last_merged))
+                
+                tail = symbol_stack.get_tail()
+                if isinstance(tail, list):
+                    tail[-1] = tail[-1].merge_symbols(last_merged, policy)
+                else:
+                    tail = tail.merge_symbols(last_merged, policy)
+                
+                
+                symbol_stack.pop()
+                symbol_stack.push(tail)
+                
+                symbol_table = tail
+                
+
+                print("RESULT::::::" + str(symbol_stack))
+                
+                #symbol_stack.tail().merge_symbols(final)
+                
+                print("======== END ========")
+                print(bcolors.FAIL + str(symbol_table) + bcolors.ENDC)
+                print("=======================")
+                
+                return Stmt_If(cond, stmts, elseifs, else_clause)
+            else:
+                # TODO
+                pass
         # <--- STMT ELSE --->
         elif (node_type == "Stmt_Else"):
             print(bcolors.OKGREEN + node_type + bcolors.ENDC)
-            stmts = create_nodes(parsed_ast['stmts'], symbol_table, policy)
+            stmts = create_nodes(parsed_ast['stmts'], symbol_table, symbol_stack, policy)
             return Stmt_Else(stmts)
         
+        #0x7f42960950f0
         # <--- FUNCTION CALL --->
         elif (node_type == "Expr_FuncCall"):
             name = parsed_ast['name']['parts'][0]
@@ -271,7 +316,7 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None):
             args_list = parsed_ast['args']
             args = []
             for arg in args_list:
-                args.append(create_nodes(arg, symbol_table, policy))
+                args.append(create_nodes(arg, symbol_table, symbol_stack, policy))
             
             funcall = Expr_FuncCall(name, args, policy.get_vultype(name))
             
@@ -326,7 +371,7 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None):
         # <--- ARG --->
         elif (node_type == "Arg"):
             print(bcolors.OKGREEN + node_type + bcolors.ENDC)
-            value = create_nodes(parsed_ast['value'], symbol_table, policy)
+            value = create_nodes(parsed_ast['value'], symbol_table, symbol_stack, policy)
             return Arg(value)
 
         # <--- BREAK --->
@@ -342,8 +387,8 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None):
         # <--- STMT WHILE --->
         elif (node_type == "Stmt_While"):
             print(bcolors.OKGREEN + node_type + bcolors.ENDC)
-            cond = create_nodes(parsed_ast['cond'], symbol_table, policy)
-            stmts = create_nodes(parsed_ast['stmts'], symbol_table, policy)
+            cond = create_nodes(parsed_ast['cond'], symbol_table, symbol_stack, policy)
+            stmts = create_nodes(parsed_ast['stmts'], symbol_table, symbol_stack, policy)
             return Stmt_While(cond, stmts)
         
         else: # discard the node
@@ -351,3 +396,5 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None):
         
 if __name__== "__main__":
     main(sys.argv, len(sys.argv))
+    
+    

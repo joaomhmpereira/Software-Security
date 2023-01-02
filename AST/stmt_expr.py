@@ -31,5 +31,5 @@ class Stmt_Expression:
     def set_sanitized_sources(self, sanitized_sources) -> None:
         self.sanitized_sources = sanitized_sources
 
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         return 'Stmt_Expression({})'.format(self.expr)
