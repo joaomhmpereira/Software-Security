@@ -84,6 +84,12 @@ def main(argv, arg):
         # create the AST nodes for the corresponding json
         create_nodes(parsed_ast, symbol_table, Symbol_Stack(symbol_table), policy)
         output += policy.get_vulnerability().output
+
+    """
+    ter lista de possiveis symtable flows,
+    depois de correr uma vez, voltar a correr novamente com cada uma das symtables
+    nao da porque a ordem pela qual as coisas acontecem importa
+    """
     
     with open(output_file, 'w') as outfile:
         json.dump(output, outfile, ensure_ascii=False, indent=4)
@@ -92,9 +98,16 @@ def create_nodes(parsed_ast, symbol_table=None, symbol_stack=None, policy=None):
     """
     Given a json, parse it and create the corresponding AST nodes
     """
-    # print s
-    if not isinstance(symbol_stack.get_tail(), list):
-        symbol_table = symbol_table.merge_symbols(symbol_stack.get_tail(), policy)
+    #print s
+    #if not isinstance(symbol_stack.get_tail(), list):
+    #    symbol_table = symbol_table.merge_symbols(symbol_stack.get_tail(), policy)
+
+    """
+    AQUI TEMOS TIPO UMA LISTA DE SYMTABLES E VAMOS FAZER UMA EXECUÇÃO COM CADA SYMTABLE
+    """
+    #print(bcolors.WARNING + "********** PARSED AST **********" + bcolors.ENDC)
+    #print(parsed_ast)
+    #print(bcolors.WARNING + "********************************" + bcolors.ENDC)
 
     if symbol_table:
         print(bcolors.OKCYAN + "=======")
@@ -259,7 +272,6 @@ def create_nodes(parsed_ast, symbol_table=None, symbol_stack=None, policy=None):
                 else_clause = create_nodes(parsed_ast['else'], symbol_table_else, symbol_stack, policy)
 
                 print(bcolors.HEADER + str(stmts) + bcolors.ENDC)
-                print("saí do create nodes")
                 elseif_list = parsed_ast['elseifs']
                 elseifs = []
                 symbol_table_elseifs = []
@@ -283,17 +295,13 @@ def create_nodes(parsed_ast, symbol_table=None, symbol_stack=None, policy=None):
                 else:
                     tail = tail.merge_symbols(last_merged, policy)
                 
-                
                 symbol_stack.pop()
                 symbol_stack.push(tail)
                 
                 symbol_table = tail
                 
-
                 print("RESULT::::::" + str(symbol_stack))
-                
-                #symbol_stack.tail().merge_symbols(final)
-                
+                                
                 print("======== END ========")
                 print(bcolors.FAIL + str(symbol_table) + bcolors.ENDC)
                 print("=======================")
@@ -302,6 +310,7 @@ def create_nodes(parsed_ast, symbol_table=None, symbol_stack=None, policy=None):
             else:
                 # TODO
                 pass
+
         # <--- STMT ELSE --->
         elif (node_type == "Stmt_Else"):
             print(bcolors.OKGREEN + node_type + bcolors.ENDC)
@@ -354,8 +363,12 @@ def create_nodes(parsed_ast, symbol_table=None, symbol_stack=None, policy=None):
                         policy.get_vulnerability().add_instance(sanitized_source_copy, funcall_name_copy, False, sanitizers_list_copy)
 
             if funcall.is_sanitizer():
-                for arg in args:
-                    arg.sanitizers = funcall.sanitizers
+                #for arg in args:
+                    #print(bcolors.OKGREEN + str(arg) + bcolors.ENDC)
+                    #arg.add_sanitized_sources(funcall.get_sanitizers())
+                    #if isinstance(arg.value, Expr_Variable) or isinstance(arg.value, Expr_FuncCall):
+                        #print(arg.value.name)
+                        #funcall.add_sanitized_sources([arg.value.get_name()])
                 funcall.add_sanitized_sources(funcall.get_sources())
                 funcall.sources = []    # limpar as sources, todas as sources foram sanitized
                 print(bcolors.FAIL + "san sources" + str(funcall.get_sanitized_sources()) + bcolors.ENDC)

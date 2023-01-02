@@ -13,10 +13,10 @@ class Symbol_Table:
     
     def merge_symbols(self, other, policy):
         result = Symbol_Table()
-        
-        print("leonor!!!!!!!!!!!!")
+        print("===== INSIDE MERGE SYMBOLS =====")
+        print("===== SELF =====")
         print(self)
-        print("leonor!!!!!!!!!!!!")
+        print("===== OTHER =====")
         print(other)
         print("vars in self: " + str(self.variables))
         for variable in self.variables:
@@ -48,7 +48,7 @@ class Symbol_Table:
             variable = result.get_variable(other_variable.name)
             if variable is None:
                 result.add_variable(other_variable)
-        
+        print("===== LEAVING MERGE =====")
         return result
                 
     def __repr__(self):

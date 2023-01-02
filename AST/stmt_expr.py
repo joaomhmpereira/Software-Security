@@ -12,7 +12,7 @@ class Stmt_Expression:
     def del_source(self, source) -> None:
         if source in self.sources:
             self.sources.remove(source)
-        
+
     def get_sources(self) -> list:
         return self.sources
     

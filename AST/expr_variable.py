@@ -19,6 +19,9 @@ class Expr_Variable:
     
     def get_sanitizers(self) -> list:
         return self.sanitizers
+
+    def get_name(self) -> str:
+        return self.name
     
     def set_sources(self, sources) -> None:
         self.sources = sources
@@ -30,7 +33,9 @@ class Expr_Variable:
         return self.sanitized_sources
 
     def add_sanitized_sources(self, sources) -> None:
-        self.sanitized_sources.extend(sources)
+        for source in sources:
+            if source not in self.sanitized_sources:
+                self.sanitized_sources.append(source)
     
     def set_sanitized_sources(self, sanitized_sources) -> None:
         self.sanitized_sources = sanitized_sources

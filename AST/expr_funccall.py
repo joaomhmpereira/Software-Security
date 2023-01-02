@@ -30,7 +30,9 @@ class Expr_FuncCall:
         return self.sanitized_sources
 
     def add_sanitized_sources(self, sources) -> None:
-        self.sanitized_sources.extend(sources)
+        for source in sources:
+            if source not in self.sanitized_sources:
+                self.sanitized_sources.append(source)
     
     def set_sanitized_sources(self, sanitized_sources) -> None:
         self.sanitized_sources = sanitized_sources

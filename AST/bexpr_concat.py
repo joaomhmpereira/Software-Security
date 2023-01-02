@@ -22,6 +22,9 @@ class BExpr_Concat:
     
     def set_sources(self, sources) -> list:
         self.sources = sources
+    
+    def get_sanitized_sources(self) -> list:
+        return self.sanitized_sources 
 
     def __str__(self) -> str:
         return 'Concat({} . {})'.format(self.left, self.right)
