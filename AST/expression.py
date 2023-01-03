@@ -29,6 +29,10 @@ class Expression:
     def del_source(self, source) -> None:
         if source in self.sources:
             self.sources.remove(source)
+    
+    def add_sanitizer(self, sanitizer) -> None:
+        if sanitizer not in self.sanitizers:
+            self.sanitizers.append(sanitizer)
             
     def add_sanitized_sources(self, sanitized_sources) -> None:
         for sanitized_source in sanitized_sources:

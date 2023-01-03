@@ -36,8 +36,8 @@ class Symbol_Table:
                     common_variables.append(variable)
                 else:
                     # if ours is not tainted, return the other's
-                    symtable_to_return.add_variable(variable)
-                    common_variables.append(variable)
+                    symtable_to_return.add_variable(other_variable)
+                    common_variables.append(other_variable)
             else:
                 # if only our symbol table has it
                 symtable_to_return.add_variable(variable) 

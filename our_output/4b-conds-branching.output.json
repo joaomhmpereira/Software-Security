@@ -35,7 +35,7 @@
         "vulnerability": "C",
         "source": "$d",
         "sink": "e",
-        "unsanitized flows": "no",
+        "unsanitized flows": "yes",
         "sanitized flows": [
             [
                 "c"
