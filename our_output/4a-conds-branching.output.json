@@ -36,14 +36,14 @@
     },
     {
         "vulnerability": "B",
-        "source": "$c",
+        "source": "d",
         "sink": "e",
         "unsanitized flows": "yes",
         "sanitized flows": []
     },
     {
         "vulnerability": "B",
-        "source": "d",
+        "source": "$c",
         "sink": "e",
         "unsanitized flows": "yes",
         "sanitized flows": []

@@ -2,6 +2,7 @@ import sys, json
 from AST.stmt_expr import Stmt_Expression
 from AST.expr_assign import Expr_Assign
 from AST.expr_variable import Expr_Variable
+from AST.expr_const_fetch import Expr_Const_Fetch
 from AST.stmt_if import Stmt_If
 from AST.stmt_else import Stmt_Else
 from AST.stmt_nop import Stmt_Nop
@@ -408,6 +409,12 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
             symbol_table.add_missing_variables(last_symtable, last_symtable.get_variables())
 
             return Stmt_While(condition, stmts)
+
+        # <--- CONST FETCH --->
+        elif (node_type == "Expr_ConstFetch"):
+            print(bcolors.OKGREEN + node_type + bcolors.ENDC)
+            name = create_nodes(parsed_ast['name'], symbol_table, policy, implicit_checker)
+            return Expr_Const_Fetch(name)
         
         else: # discard the node
             return None
