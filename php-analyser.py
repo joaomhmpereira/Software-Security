@@ -284,7 +284,7 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
             funcall = Expr_FuncCall(name, args, policy.get_vultype(name))
             
             if funcall.is_sanitizer():
-                funcall.sanitizers.append([funcall.get_name()])
+                funcall.add_sanitizer([funcall.get_name()])
 
             # sources contain sources from unsanitized flows
             # sanitized_sources contain sources from sanitized flows
@@ -298,9 +298,9 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
 
                 # function sanitizers: union with the arg's
                 for sanitizer in arg.get_sanitizers():
-                    if funcall.is_sanitizer():
+                    if funcall.is_sanitizer() and sanitizer not in funcall.get_sanitizers():
                         sanitizer = [funcall.get_name()] + sanitizer # add funcal name to beginning of list
-                    funcall.sanitizers.append(sanitizer)
+                    funcall.add_sanitizer(sanitizer)
 
                 if policy.get_vulnerability().is_implicit():
                     sources = policy.lub(sources, deepcopy(implicit_checker.get_flat_sources()))
@@ -366,10 +366,48 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
 
         # <--- STMT WHILE --->
         elif (node_type == "Stmt_While"):
-            print(bcolors.OKGREEN + node_type + bcolors.ENDC)
-            cond = create_nodes(parsed_ast['cond'], symbol_table, policy, implicit_checker)
-            stmts = create_nodes(parsed_ast['stmts'], symbol_table, policy, implicit_checker)
-            return Stmt_While(cond, stmts)
+
+            symtable_body = deepcopy(symbol_table)
+            
+            #Special case when vulnerabilities are only detected with multiple body loop iterations
+            last_symtable = None
+            while True:
+                condition = create_nodes(parsed_ast['cond'], symtable_body, policy, implicit_checker)
+
+                if policy.get_vulnerability().is_implicit():
+                    implicit_checker.push_source(condition.get_sources())
+                    implicit_checker.push_sanitizer(condition.get_sanitizers())
+                    implicit_checker.push_sanitized_source(condition.get_sanitized_sources())
+                    print(implicit_checker)
+
+                stmts = create_nodes(parsed_ast['stmts'], symtable_body, policy, implicit_checker)
+
+                if last_symtable is not None:
+                    oldLastSymtable = deepcopy(last_symtable)
+                    last_symtable, _ = last_symtable.merge_symbols(symtable_body, policy)
+                    if oldLastSymtable == last_symtable:
+                        break
+                else:
+                    last_symtable = deepcopy(symtable_body)
+                
+                # pop context out of implicit_checker stacks
+                if policy.get_vulnerability().is_implicit():
+                    implicit_checker.pop_source()
+                    implicit_checker.pop_sanitizer()
+                    implicit_checker.pop_sanitized_source()
+                    print(implicit_checker)
+
+            # pop context out of implicit_checker stacks
+            # we need to pop after the while loop because we dont do it in last iteration
+            if policy.get_vulnerability().is_implicit():
+                implicit_checker.pop_source()
+                implicit_checker.pop_sanitizer()
+                implicit_checker.pop_sanitized_source()
+                print(implicit_checker)
+
+            symbol_table.add_missing_variables(last_symtable, last_symtable.get_variables())
+
+            return Stmt_While(condition, stmts)
         
         else: # discard the node
             return None

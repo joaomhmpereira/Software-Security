@@ -9,5 +9,12 @@
                 "d"
             ]
         ]
+    },
+    {
+        "vulnerability": "B",
+        "source": "f",
+        "sink": "$c",
+        "unsanitized flows": "yes",
+        "sanitized flows": []
     }
 ]

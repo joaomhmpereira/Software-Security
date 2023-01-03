@@ -64,3 +64,15 @@ class Symbol_Table:
         for var in self.variables:
             s += str(var) + " | "
         return s + ">"
+
+    def __eq__(self, other_symbol_table) -> bool:
+        if self.__class__ == other_symbol_table.__class__:
+            if len(self.variables) != len(other_symbol_table.get_variables()):
+                return False
+            for var in self.variables:
+                other_var = other_symbol_table.get_variable(var.get_name())
+                if var.get_sources() != other_var.get_sources() or var.get_sanitizers() != other_var.get_sanitizers() or var.get_sanitized_sources() != other_var.get_sanitized_sources():
+                    return False
+            return True
+        else:
+            return False

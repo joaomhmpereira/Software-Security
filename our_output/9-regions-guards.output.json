@@ -20,5 +20,16 @@
                 "s"
             ]
         ]
+    },
+    {
+        "vulnerability": "B",
+        "source": "b",
+        "sink": "z",
+        "unsanitized flows": "yes",
+        "sanitized flows": [
+            [
+                "s"
+            ]
+        ]
     }
 ]
