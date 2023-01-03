@@ -2,12 +2,6 @@ import sys, json
 from AST.stmt_expr import Stmt_Expression
 from AST.expr_assign import Expr_Assign
 from AST.expr_variable import Expr_Variable
-from AST.bexpr_greater import BExpr_Greater
-from AST.bexpr_smaller import BExpr_Smaller
-from AST.bexpr_equal import BExpr_Equal
-from AST.bexpr_not_equal import BExpr_Not_Equal
-from AST.bexpr_concat import BExpr_Concat
-from AST.bexpr_plus import BExpr_Plus
 from AST.stmt_if import Stmt_If
 from AST.stmt_else import Stmt_Else
 from AST.stmt_nop import Stmt_Nop
@@ -17,6 +11,7 @@ from AST.name import Name
 from AST.arg import Arg
 from AST.expr_funccall import Expr_FuncCall
 from AST.symbol_table import Symbol_Table
+from AST.binopexpr import Binop_Expr
 from policy import Policy
 from vulnerability import Vulnerability
 from copy import deepcopy
@@ -75,6 +70,7 @@ def main(argv, arg):
     for vulnerability in vulnerabilities:
         policy = Policy(vulnerability.get_sources(), vulnerability)
         policies.append(policy)
+        print(policy)
     
     output = [] 
     for policy in policies:
@@ -83,6 +79,7 @@ def main(argv, arg):
         symbol_table = Symbol_Table()
         create_nodes(parsed_ast, symbol_table, policy)
         output += policy.get_vulnerability().output
+        print("NEW POLICY")
     
     with open(output_file, 'w') as outfile:
         json.dump(output, outfile, ensure_ascii=False, indent=4)
@@ -92,10 +89,10 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None):
     Given a json, parse it and create the corresponding AST nodes
     """
     # print s
-    if symbol_table:
-        print(bcolors.OKCYAN + "=======")
-        print(symbol_table)
-        print("=======" + bcolors.ENDC)
+    # if symbol_table:
+    #     print(bcolors.OKCYAN + "=======")
+    #     print(symbol_table)
+    #     print("=======" + bcolors.ENDC)
 
     #print(bcolors.OKBLUE + "Inside create_nodes" + bcolors.ENDC)
     if (type(parsed_ast) == list):  # if we receive a list of instructions (list of dictionaries)
@@ -129,35 +126,33 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None):
             if not lval.is_source():
                 lval.del_source(lval.name)
 
-            print(bcolors.WARNING + str(rval) + bcolors.ENDC)
+            #print(bcolors.WARNING + str(rval) + bcolors.ENDC)
              
             sources = policy.lub(lval.get_sources(), rval.get_sources())
 
             sanitized_sources = policy.lub(lval.get_sanitized_sources(), rval.get_sanitized_sources())
             lval.set_sources(sources)
-
+            print("SOURCES: " + str(lval.get_sources()))
             for sanitizer in rval.get_sanitizers():
                 if sanitizer not in lval.sanitizers:
                     lval.sanitizers.append(sanitizer)
 
             lval.set_sanitized_sources(sanitized_sources)
-            
+            print("SANITIZED SOURCES: " + str(sanitized_sources))
+
             # explicit leaks
-            if isinstance(rval, Expr_FuncCall) or isinstance(rval, Expr_Variable):
-                if lval.is_sink():
-                    for source in rval.get_sources():
-                        print(bcolors.HEADER + "Outputing vuln without san flows" + bcolors.ENDC)
-                        source_copy = deepcopy(source)
-                        name_copy = deepcopy(lval.name)
-                        policy.get_vulnerability().add_instance(source_copy, name_copy, True, [])                            
-                    
-                    for sanitized_source in rval.get_sanitized_sources():
-                        print(bcolors.HEADER + "Outputing vuln witho san flows" + bcolors.ENDC)
-                        print(bcolors.WARNING + "SANITIZERS ASSIGNMENT: " + str(rval.get_sanitizers()) + bcolors.ENDC)
-                        sanitized_source_copy = deepcopy(sanitized_source)
-                        name_copy = deepcopy(lval.name)
-                        sanitizers_list_copy = deepcopy(rval.get_sanitizers())
-                        policy.get_vulnerability().add_instance(sanitized_source_copy, name_copy, False, sanitizers_list_copy)
+            if lval.is_sink():
+                for source in rval.get_sources():
+                    #print(bcolors.HEADER + "Outputing vuln without san flows" + bcolors.ENDC)
+                    source_copy = deepcopy(source)
+                    policy.get_vulnerability().add_instance(source_copy, lval.get_name(), True, [])                            
+                
+                for sanitized_source in rval.get_sanitized_sources():
+                    #print(bcolors.HEADER + "Outputing vuln witho san flows" + bcolors.ENDC)
+                    #print(bcolors.WARNING + "SANITIZERS ASSIGNMENT: " + str(rval.get_sanitizers()) + bcolors.ENDC)
+                    sanitized_source_copy = deepcopy(sanitized_source)
+                    sanitizers_list_copy = deepcopy(rval.get_sanitizers())
+                    policy.get_vulnerability().add_instance(sanitized_source_copy, lval.get_name(), False, sanitizers_list_copy)
 
             return Expr_Assign(lval, rval)
         
@@ -180,47 +175,21 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None):
             print(bcolors.OKGREEN + node_type + bcolors.ENDC)
             return Stmt_Expression(parsed_ast['attributes']['rawValue'])
 
-        # <--- EXP BINARY GREATER --->
-        elif (node_type == "Expr_BinaryOp_Greater"):
+        # <--- BINARY EXPRESSIONS --->
+        elif ("Expr_BinaryOp" in node_type):
             print(bcolors.OKGREEN + node_type + bcolors.ENDC)
             left = create_nodes(parsed_ast['left'], symbol_table, policy)
             right = create_nodes(parsed_ast['right'], symbol_table, policy)
-            return BExpr_Greater(left, right)
-        
-        # <--- EXP BINARY SMALLER --->
-        elif (node_type == "Expr_BinaryOp_Smaller"):
-            print(bcolors.OKGREEN + node_type + bcolors.ENDC)
-            left = create_nodes(parsed_ast['left'], symbol_table, policy)
-            right = create_nodes(parsed_ast['right'], symbol_table, policy)
-            return BExpr_Smaller(left, right)
-        
-        # <--- EXP BINARY EQUAL --->
-        elif (node_type == "Expr_BinaryOp_Equal"):
-            print(bcolors.OKGREEN + node_type + bcolors.ENDC)
-            left = create_nodes(parsed_ast['left'], symbol_table, policy)
-            right = create_nodes(parsed_ast['right'], symbol_table, policy)
-            return BExpr_Equal(left, right)
-
-        # <--- EXP BINARY NOT EQUAL --->
-        elif (node_type == "Expr_BinaryOp_NotEqual"):
-            print(bcolors.OKGREEN + node_type + bcolors.ENDC)
-            left = create_nodes(parsed_ast['left'], symbol_table, policy)
-            right = create_nodes(parsed_ast['right'], symbol_table, policy)
-            return BExpr_Not_Equal(left, right)
-
-        # <--- EXP BINARY PLUS --->
-        elif (node_type == "Expr_BinaryOp_Plus"):
-            print(bcolors.OKGREEN + node_type + bcolors.ENDC)
-            left = create_nodes(parsed_ast['left'], symbol_table, policy)
-            right = create_nodes(parsed_ast['right'], symbol_table, policy)
-            return BExpr_Plus(left, right)
-
-        # <--- EXP BINARY CONCAT --->
-        elif (node_type == "Expr_BinaryOp_Concat"):
-            print(bcolors.OKGREEN + node_type + bcolors.ENDC)
-            left = create_nodes(parsed_ast['left'], symbol_table, policy)
-            right = create_nodes(parsed_ast['right'], symbol_table, policy)
-            return BExpr_Concat(left, right)
+            expr = Binop_Expr(left, right)
+            
+            expr.set_sources(policy.lub(left.get_sources(), right.get_sources()))
+            expr.set_sanitized_sources(policy.lub(left.get_sanitized_sources(), right.get_sanitized_sources()))
+            sanitizers = []
+            for sanitizer in left.get_sanitizers() + right.get_sanitizers():
+                if sanitizer not in sanitizers:
+                    sanitizers.append(sanitizer)        
+            expr.set_sanitizers(sanitizers)
+            return expr
 
         # <--- SCALAR LNUMBER --->
         elif (node_type == "Scalar_LNumber"):
@@ -230,7 +199,7 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None):
         # <--- IF --->
         elif (node_type == "Stmt_If"):
             print(bcolors.OKGREEN + node_type + bcolors.ENDC)
-            print(bcolors.OKBLUE + "SYMBOL TABLE BEFORE" + str(symbol_table) + bcolors.ENDC)
+            #print(bcolors.OKBLUE + "SYMBOL TABLE BEFORE" + str(symbol_table) + bcolors.ENDC)
             cond = create_nodes(parsed_ast['cond'], symbol_table, policy)
             
             symbol_table_if = deepcopy(symbol_table)
@@ -239,15 +208,15 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None):
             stmts = create_nodes(parsed_ast['stmts'], symbol_table_if, policy)
             else_clause = create_nodes(parsed_ast['else'], symbol_table_else, policy)
             
-            print(bcolors.WARNING + "IF symtable " + str(symbol_table_if) + bcolors.ENDC)
-            print(bcolors.WARNING + "ELSE symtable " + str(symbol_table_else) + bcolors.ENDC)
+            # print(bcolors.WARNING + "IF symtable " + str(symbol_table_if) + bcolors.ENDC)
+            # print(bcolors.WARNING + "ELSE symtable " + str(symbol_table_else) + bcolors.ENDC)
 
             merged_symbol_table, common_variables = symbol_table_if.merge_symbols(symbol_table_else, policy)
-            print(bcolors.FAIL + "Merged Symbol Table: " + str(merged_symbol_table) + bcolors.ENDC)
-            print(bcolors.OKBLUE + "InBoth: " + str(common_variables) + bcolors.ENDC)
+            # print(bcolors.FAIL + "Merged Symbol Table: " + str(merged_symbol_table) + bcolors.ENDC)
+            # print(bcolors.OKBLUE + "InBoth: " + str(common_variables) + bcolors.ENDC)
 
             symbol_table.add_missing_variables(merged_symbol_table, common_variables)
-            print(bcolors.OKBLUE + "SYMBOL TABLE AFTER" + str(symbol_table) + bcolors.ENDC)
+            #print(bcolors.OKBLUE + "SYMBOL TABLE AFTER" + str(symbol_table) + bcolors.ENDC)
             
             """
             TODO: handle elseifs
@@ -262,7 +231,6 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None):
             
             return Stmt_If(cond, stmts, [], else_clause)
 
-        
         # <--- STMT ELSE --->
         elif (node_type == "Stmt_Else"):
             print(bcolors.OKGREEN + node_type + bcolors.ENDC)
@@ -283,41 +251,43 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None):
             if funcall.is_sanitizer():
                 funcall.sanitizers.append([funcall.get_name()])
 
-            """
-            sources contain sources from unsanitized flows
-            sanitized_sources contain sources from sanitized flows
-            """
+            # sources contain sources from unsanitized flows
+            # sanitized_sources contain sources from sanitized flows
             for arg in args:
-                print(bcolors.FAIL + "Arg: " + str(arg) + bcolors.ENDC)
-                print(bcolors.OKBLUE + "Funccal: " + str(funcall) + bcolors.ENDC)
+                # function sources: l.u.b. with the arg's
+                print("DEBUG ARG: " + str(arg.get_sources()))
+                print("DEBUG FUN: " + str(funcall.get_sources()))
                 funcall.set_sources(policy.lub(funcall.get_sources(), arg.get_sources()))
 
+                # function sanitizers: union with the arg's
                 for sanitizer in arg.get_sanitizers():
                     if funcall.is_sanitizer():
                         sanitizer = [funcall.get_name()] + sanitizer # add funcal name to beginning of list
                     funcall.sanitizers.append(sanitizer)
 
+                # function sanitized sources: l.u.b. with the arg's
                 funcall.set_sanitized_sources(policy.lub(funcall.get_sanitized_sources(), arg.get_sanitized_sources()))
+                
+                # -------------------- #
+                
+                # sensitive function: add sources and sanitized sources
                 if funcall.is_sink():
-                    for source in arg.get_sources():    
-                        print(bcolors.HEADER + "Outputing vuln without san flows" + bcolors.ENDC)
+                    for source in arg.get_sources():  
+                        # the arg's (unsanitized) sources are the function's  
                         source_copy = deepcopy(source)
-                        funcall_name_copy = deepcopy(funcall.name)
-                        policy.get_vulnerability().add_instance(source_copy, funcall_name_copy, True, [])                            
+                        policy.get_vulnerability().add_instance(source_copy, funcall.get_name(), True, [])                            
                     
                     for sanitized_source in arg.get_sanitized_sources():
-                        print(bcolors.HEADER + "Outputing vuln with san flows" + bcolors.ENDC)
-                        print(bcolors.WARNING + "SANITIZERS FCALL: " + str(arg.get_sanitizers()) + bcolors.ENDC)
+                        # the arg's sanitized sources are the function's
                         sanitized_source_copy = deepcopy(sanitized_source)
-                        funcall_name_copy = deepcopy(funcall.name)
                         sanitizers_list_copy = deepcopy(arg.get_sanitizers())
-                        policy.get_vulnerability().add_instance(sanitized_source_copy, funcall_name_copy, False, sanitizers_list_copy)
-
+                        policy.get_vulnerability().add_instance(sanitized_source_copy, funcall.get_name(), False, sanitizers_list_copy)
+                        print("OUTPUT: " + str(policy.get_vulnerability().output))
+            
+            # if the function is a sanitizer: all of its sources are  now sanitized
             if funcall.is_sanitizer():
                 funcall.add_sanitized_sources(funcall.get_sources())
-                funcall.sources = []    # limpar as sources, todas as sources foram sanitized
-                print(bcolors.FAIL + "san sources" + str(funcall.get_sanitized_sources()) + bcolors.ENDC)
-                print(bcolors.FAIL + "unsan sources: " + str(funcall.get_sources()) + bcolors.ENDC)
+                funcall.sources = []
 
             return funcall
 

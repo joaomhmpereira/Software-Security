@@ -12,5 +12,16 @@
         "sink": "z",
         "unsanitized flows": "yes",
         "sanitized flows": []
+    },
+    {
+        "vulnerability": "B",
+        "source": "b",
+        "sink": "$d",
+        "unsanitized flows": "yes",
+        "sanitized flows": [
+            [
+                "e"
+            ]
+        ]
     }
 ]

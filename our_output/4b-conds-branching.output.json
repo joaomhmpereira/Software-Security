@@ -22,9 +22,9 @@
     },
     {
         "vulnerability": "C",
-        "source": "$d",
+        "source": "$a",
         "sink": "e",
-        "unsanitized flows": "no",
+        "unsanitized flows": "yes",
         "sanitized flows": [
             [
                 "c"
@@ -33,9 +33,9 @@
     },
     {
         "vulnerability": "C",
-        "source": "$a",
+        "source": "$d",
         "sink": "e",
-        "unsanitized flows": "yes",
+        "unsanitized flows": "no",
         "sanitized flows": [
             [
                 "c"

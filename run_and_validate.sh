@@ -29,7 +29,7 @@ else
 	echo -e "${GREEN}running slices and patterns...${NC}"
 	for input in `ls ${slices_ast_dir}`; do
 		test=$(basename -s .json $input)
-		echo -e "${BLUE}slices ast file: ${slice}	pattern file: ${test}.patterns.json${NC}"
+		echo -e "${BLUE}slices ast file: ${input}	pattern file: ${test}.patterns.json${NC}"
 		python php-analyser.py ${slices_ast_dir}/${input} ${pattern_dir}/${test}.patterns.json > /dev/null
 	done
 
