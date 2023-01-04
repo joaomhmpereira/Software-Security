@@ -63,7 +63,7 @@ def main(argv, arg):
     # slices_ast/1a-basic-flow.json -> output/1a-basic-flow.output.json
     B = [x for x in argv[1].split('/') if x.strip()]
     B = [x for x in B[1].split('.') if x.strip()]
-    output_file = 'our_output/' + B[0] + '.output.json'
+    output_file = 'output/' + B[0] + '.output.json'
     
     # create vulnerabilities from pattern
     vulnerabilities = []
