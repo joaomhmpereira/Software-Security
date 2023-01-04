@@ -12,5 +12,12 @@
         "sanitizers": ["escapeString"],
         "sinks": ["exec", "query", "querySingle"],
         "implicit": "yes"
+    },
+    {
+        "vulnerability": "Command Injection",
+        "sources": ["$_GET", "$_POST", "$_COOKIE"],
+        "sanitizers": ["filter_input"],
+        "sinks": ["exec", "passthru", "system"],
+        "implicit": "yes" 
     }
 ]
