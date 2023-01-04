@@ -14,6 +14,9 @@ from AST.expr_funccall import Expr_FuncCall
 from AST.symbol_table import Symbol_Table
 from AST.binopexpr import Binop_Expr
 from AST.implicit_checker import Implicit_Checker
+from AST.expr_not import Expr_Not
+from AST.inc_dec import Inc_Dec
+from AST.expr_array_dim_fetch import Expr_Array_Dim_Fetch
 from policy import Policy
 from vulnerability import Vulnerability
 from copy import deepcopy
@@ -125,7 +128,7 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
             return Stmt_Expression(create_nodes(parsed_ast['expr'], symbol_table, policy, implicit_checker))
         
         # <--- ASSIGNMENT --->
-        elif (node_type == "Expr_Assign"):
+        elif ("Expr_Assign" in node_type):
             print(bcolors.OKGREEN + node_type + bcolors.ENDC)
             rval = create_nodes(parsed_ast['expr'], symbol_table, policy, implicit_checker)
             lval = create_nodes(parsed_ast['var'], symbol_table, policy, implicit_checker)
@@ -191,12 +194,6 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
                 symbol_table.add_variable(variable)
             return variable
         
-        # <--- STRING --->
-        elif (node_type == "Scalar_String"):
-            #print(parsed_ast)
-            print(bcolors.OKGREEN + node_type + bcolors.ENDC)
-            return Stmt_Expression(parsed_ast['attributes']['rawValue'])
-
         # <--- BINARY EXPRESSIONS --->
         elif ("Expr_BinaryOp" in node_type):
             print(bcolors.OKGREEN + node_type + bcolors.ENDC)
@@ -214,10 +211,10 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
             return expr
 
         # <--- SCALAR LNUMBER --->
-        elif (node_type == "Scalar_LNumber"):
+        elif ("Scalar_" in node_type):
             print(bcolors.OKGREEN + node_type + bcolors.ENDC)
             return Stmt_Expression(parsed_ast['value'])
-
+        
         # <--- IF --->
         elif (node_type == "Stmt_If"):
             #print(bcolors.OKGREEN + node_type + bcolors.ENDC)
@@ -274,10 +271,16 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
             return Stmt_Else(stmts)
         
         # <--- FUNCTION CALL --->
-        elif (node_type == "Expr_FuncCall"):
-            name = parsed_ast['name']['parts'][0]
+        elif (node_type == "Expr_FuncCall") or (node_type == "Stmt_Echo"):
             print(bcolors.OKGREEN + node_type + " -> " + name + bcolors.ENDC)
-            args_list = parsed_ast['args']
+
+            if (node_type == "Expr_FuncCall"):
+                name = parsed_ast['name']['parts'][0]
+                args_list = parsed_ast['args']
+            else:
+                name = "echo"
+                args_list = parsed_ast['exprs']
+            
             args = []
             for arg in args_list:
                 args.append(create_nodes(arg, symbol_table, policy, implicit_checker))
@@ -416,6 +419,26 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
             name = create_nodes(parsed_ast['name'], symbol_table, policy, implicit_checker)
             return Expr_Const_Fetch(name)
         
+        # <--- BITWISE/BOOLEAN NOT --->
+        elif (node_type == "Expr_BitwiseNot") or (node_type == "Expr_BooleanNot"):
+            print(bcolors.OKGREEN + node_type + bcolors.ENDC)
+            expr = create_nodes(parsed_ast['expr'], symbol_table, policy, implicit_checker)
+            return Expr_Not(expr)
+        
+        # <--- POST/PRE-DEC/INC --->
+        elif (node_type == "Expr_PostInc") or (node_type == "Expr_PostDec") or (node_type == "Expr_PreDec") or (node_type == "Expr_PreInc"):
+            print(bcolors.OKGREEN + node_type + bcolors.ENDC)
+            var = create_nodes(parsed_ast['var'], symbol_table, policy, implicit_checker)
+            return Inc_Dec(var)
+
+        # <--- ARRAYDIMFETCH --->
+        elif (node_type == "Expr_ArrayDimFetch"):
+            print(bcolors.OKGREEN + node_type + bcolors.ENDC)
+            var = create_nodes(parsed_ast['var'], symbol_table, policy, implicit_checker)
+            dim = create_nodes(parsed_ast['dim'], symbol_table, policy, implicit_checker)
+            return Expr_Array_Dim_Fetch(var, dim)
+
+        #  <--- BREAK, CONTINUE,NOP, COMMENTS, ... EVERYTHING ELSE --->
         else: # discard the node
             return None
         
