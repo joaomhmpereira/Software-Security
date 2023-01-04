@@ -1,0 +1,9 @@
+[
+    {
+        "vulnerability": "SQL injection",
+        "source": "$_GET",
+        "sink": "mysql_query",
+        "unsanitized flows": "yes",
+        "sanitized flows": []
+    }
+]

@@ -1,2 +1,6 @@
 __pycache__
 .DS_Store
+vendor
+composer.json
+composer.lock
+composer.phar
