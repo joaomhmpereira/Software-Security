@@ -34,9 +34,9 @@ else
 	done
 
 	echo -e "${GREEN}validating outputs...${NC}"
-	for input in `ls our_output`; do
+	for input in `ls output`; do
 		echo -e "${BLUE}output: ${input}${NC}"
-		python validate.py -o our_output/${input} -t real_output/${input}
+		python validate.py -o output/${input} -t real_output/${input}
 		echo -e "${BLUE}========================================================${NC}"
 	done
 fi

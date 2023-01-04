@@ -291,6 +291,12 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
             if funcall.is_sanitizer():
                 funcall.add_sanitizer([funcall.get_name()])
 
+            if policy.get_vulnerability().is_implicit():
+                sources = policy.lub(deepcopy(funcall.get_sources()), deepcopy(implicit_checker.get_flat_sources()))
+                sanitized_sources = policy.lub(deepcopy(funcall.get_sanitized_sources()), deepcopy(implicit_checker.get_flat_sanitized_sources()))
+                for implicit_sanitizer in implicit_checker.get_flat_sanitizers():
+                    funcall.add_sanitizer(implicit_sanitizer)
+
             # sources contain sources from unsanitized flows
             # sanitized_sources contain sources from sanitized flows
             for arg in args:
@@ -298,20 +304,18 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
                 print("DEBUG ARG: " + str(arg.get_sources()))
                 print("DEBUG FUN: " + str(funcall.get_sources()))
 
-                sources = policy.lub(deepcopy(funcall.get_sources()), deepcopy(arg.get_sources()))
-                sanitized_sources = policy.lub(deepcopy(funcall.get_sanitized_sources()), deepcopy(arg.get_sanitized_sources()))
+                if policy.get_vulnerability().is_implicit():
+                    sources = policy.lub(sources, deepcopy(arg.get_sources()))
+                    sanitized_sources = policy.lub(sanitized_sources, deepcopy(arg.get_sanitized_sources()))
+                else:
+                    sources = policy.lub(deepcopy(funcall.get_sources()), deepcopy(arg.get_sources()))
+                    sanitized_sources = policy.lub(deepcopy(funcall.get_sanitized_sources()), deepcopy(arg.get_sanitized_sources()))
 
                 # function sanitizers: union with the arg's
                 for sanitizer in arg.get_sanitizers():
                     if funcall.is_sanitizer() and sanitizer not in funcall.get_sanitizers():
                         sanitizer = [funcall.get_name()] + sanitizer # add funcal name to beginning of list
                     funcall.add_sanitizer(sanitizer)
-
-                if policy.get_vulnerability().is_implicit():
-                    sources = policy.lub(sources, deepcopy(implicit_checker.get_flat_sources()))
-                    sanitized_sources = policy.lub(sanitized_sources, deepcopy(implicit_checker.get_flat_sanitized_sources()))
-                    for implicit_sanitizer in implicit_checker.get_flat_sanitizers():
-                        funcall.add_sanitizer(implicit_sanitizer)
 
                 # function sanitized sources: l.u.b. with the arg's
                 funcall.set_sanitized_sources(sanitized_sources)
