@@ -28,10 +28,17 @@
         "implicit": "yes"
     },
     {
-        "vulnerability": "PHP Object Injection",
+        "vulnerability": "Object Injection",
         "sources": ["$_GET", "$_POST", "$_COOKIE"],
         "sanitizers": [],
         "sinks": ["unserialize"],
+        "implicit": "yes"
+    },
+    {
+        "vulnerability": "File inclusion",
+        "sources": ["$_GET", "$_POST", "$_COOKIE"],
+        "sanitizers": [],
+        "sinks": ["include"],
         "implicit": "yes"
     }
 ]
