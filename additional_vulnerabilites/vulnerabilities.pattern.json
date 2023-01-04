@@ -19,5 +19,12 @@
         "sanitizers": ["filter_input"],
         "sinks": ["exec", "passthru", "system"],
         "implicit": "yes" 
+    },
+    {
+        "vulnerability": "XSS",
+        "sources": ["$_GET", "$_POST", "$_COOKIE"],
+        "sanitizers": ["htmlspecialchars", "filter_input", "urlencode"],
+        "sinks": ["echo"],
+        "implicit": "yes"
     }
 ]
