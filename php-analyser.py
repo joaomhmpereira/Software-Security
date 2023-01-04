@@ -272,7 +272,6 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
         
         # <--- FUNCTION CALL, ECHO  --->
         elif (node_type == "Expr_FuncCall") or (node_type == "Stmt_Echo"):
-            print(bcolors.OKGREEN + node_type + " -> " + name + bcolors.ENDC)
 
             if (node_type == "Expr_FuncCall"):
                 name = parsed_ast['name']['parts'][0]
@@ -281,6 +280,8 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
                 name = "echo"
                 args_list = parsed_ast['exprs']
             
+            print(bcolors.OKGREEN + node_type + " -> " + name + bcolors.ENDC)
+
             args = []
             for arg in args_list:
                 args.append(create_nodes(arg, symbol_table, policy, implicit_checker))
