@@ -26,5 +26,12 @@
         "sanitizers": ["htmlspecialchars", "filter_input", "urlencode"],
         "sinks": ["echo"],
         "implicit": "yes"
+    },
+    {
+        "vulnerability": "PHP Object Injection",
+        "sources": ["$_GET", "$_POST", "$_COOKIE"],
+        "sanitizers": [],
+        "sinks": ["unserialize"],
+        "implicit": "yes"
     }
 ]
