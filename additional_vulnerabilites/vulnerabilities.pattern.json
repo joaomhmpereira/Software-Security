@@ -1,0 +1,9 @@
+[
+    {
+        "vulnerability": "SQL injection",
+        "sources": ["$_GET", "$_POST", "$_COOKIE"],
+        "sanitizers": ["sqlsrv_prepare"],
+        "sinks": ["sqlsrv_query"],
+        "implicit": "yes"
+    }
+]
