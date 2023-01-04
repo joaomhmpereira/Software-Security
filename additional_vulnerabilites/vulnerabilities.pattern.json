@@ -1,9 +1,16 @@
 [
     {
-        "vulnerability": "SQL injection",
+        "vulnerability": "Microsoft Server SQL Injection",
         "sources": ["$_GET", "$_POST", "$_COOKIE"],
         "sanitizers": ["sqlsrv_prepare"],
         "sinks": ["sqlsrv_query"],
+        "implicit": "yes"
+    },
+    {
+        "vulnerability": "SQLite SQL Injection",
+        "sources": ["$_GET", "$_POST", "$_COOKIE"],
+        "sanitizers": ["escapeString"],
+        "sinks": ["exec", "query", "querySingle"],
         "implicit": "yes"
     }
 ]
