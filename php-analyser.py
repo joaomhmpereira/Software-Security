@@ -210,7 +210,7 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
             expr.set_sanitizers(sanitizers)
             return expr
 
-        # <--- SCALAR LNUMBER --->
+        # <--- SCALARS  --->
         elif ("Scalar_" in node_type):
             print(bcolors.OKGREEN + node_type + bcolors.ENDC)
             return Stmt_Expression(parsed_ast['value'])
@@ -270,7 +270,7 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
             stmts = create_nodes(parsed_ast['stmts'], symbol_table, policy, implicit_checker)
             return Stmt_Else(stmts)
         
-        # <--- FUNCTION CALL --->
+        # <--- FUNCTION CALL, ECHO  --->
         elif (node_type == "Expr_FuncCall") or (node_type == "Stmt_Echo"):
 
             if (node_type == "Expr_FuncCall"):
