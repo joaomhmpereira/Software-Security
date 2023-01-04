@@ -5,6 +5,7 @@ from AST.expr_variable import Expr_Variable
 from AST.expr_const_fetch import Expr_Const_Fetch
 from AST.stmt_if import Stmt_If
 from AST.stmt_else import Stmt_Else
+from AST.stmt_elseif import Stmt_ElseIf
 from AST.stmt_nop import Stmt_Nop
 from AST.stmt_while import Stmt_While
 from AST.stmt_break import Stmt_Break
@@ -37,7 +38,7 @@ def main(argv, arg):
     
     # check the number of arguments received
     if (arg != 3):
-        print(bcolors.FAIL + "Usage: python parser.py <code_slice>.json <vuln_patter>.json" + bcolors.ENDC)
+        print(bcolors.FAIL + "Usage: python php-analyser.py <code_slice>.json <vuln_patter>.json" + bcolors.ENDC)
         sys.exit(1)
 
     # get ast_slice content
@@ -230,6 +231,7 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
 
             symbol_table_if = deepcopy(symbol_table)
             symbol_table_else = deepcopy(symbol_table)
+            symbol_table_initial = deepcopy(symbol_table)
                         
             stmts = create_nodes(parsed_ast['stmts'], symbol_table_if, policy, implicit_checker)
             else_clause = create_nodes(parsed_ast['else'], symbol_table_else, policy, implicit_checker)
@@ -238,12 +240,29 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
             #print(bcolors.WARNING + "ELSE symtable " + str(symbol_table_else) + bcolors.ENDC)
 
             merged_symbol_table, common_variables = symbol_table_if.merge_symbols(symbol_table_else, policy)
-            #print(bcolors.FAIL + "Merged Symbol Table: " + str(merged_symbol_table) + bcolors.ENDC)
             #print(bcolors.OKBLUE + "InBoth: " + str(common_variables) + bcolors.ENDC)
 
             symbol_table.add_missing_variables(merged_symbol_table, common_variables)
+            print(bcolors.FAIL + "Merged Symbol Table: " + str(merged_symbol_table) + bcolors.ENDC)
+
             #print(bcolors.OKBLUE + "SYMBOL TABLE AFTER" + str(symbol_table) + bcolors.ENDC)
             
+            # elseifs 
+            elseif_list = parsed_ast['elseifs']
+            elseifs = []
+            for elseif in elseif_list:
+                print(bcolors.FAIL + "Merged Symbol Table BEFORE: " + str(symbol_table) + bcolors.ENDC)
+                print("Entrei elseif")
+                symbol_table_elseif = deepcopy(symbol_table_initial)
+                elseifs.append(create_nodes(elseif, symbol_table_elseif, policy, implicit_checker))
+                print(bcolors.OKBLUE + str(symbol_table_elseif) + bcolors.ENDC)
+
+                # propagate changed symbol table
+                merged_symbol_table, common_variables = symbol_table_elseif.merge_symbols(symbol_table, policy)
+                symbol_table.add_missing_variables(merged_symbol_table, common_variables)
+                print(bcolors.FAIL + "Merged Symbol Table AFTER: " + str(symbol_table) + bcolors.ENDC)
+
+
             # pop context out of implicit_checker stacks
             if policy.get_vulnerability().is_implicit():
                 implicit_checker.pop_source()
@@ -251,25 +270,43 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
                 implicit_checker.pop_sanitized_source()
                 print(implicit_checker)
 
-            """
-            TODO: handle elseifs
-            """
-            #elseif_list = parsed_ast['elseifs']
-            #elseifs = []
-            #symbol_table_elseifs = []
-            #for elseif in elseif_list:
-            #    symbol_table_elseif = deepcopy(symbol_table)
-            #    elseifs.append(create_nodes(elseif, symbol_table_elseif, policy))
-            #    symbol_table_elseifs.append(symbol_table_elseif)
-            
-            return Stmt_If(cond, stmts, [], else_clause)
+            return Stmt_If(cond, stmts, elseifs, else_clause)
 
         # <--- STMT ELSE --->
         elif (node_type == "Stmt_Else"):
             print(bcolors.OKGREEN + node_type + bcolors.ENDC)
             stmts = create_nodes(parsed_ast['stmts'], symbol_table, policy, implicit_checker)
             return Stmt_Else(stmts)
-        
+
+        elif (node_type == "Stmt_ElseIf"):
+            print(bcolors.OKGREEN + node_type + bcolors.ENDC)
+            print(bcolors.OKCYAN + "BEFORE ELSEIF: " + str(symbol_table) + bcolors.ENDC)
+
+            cond = create_nodes(parsed_ast['cond'], symbol_table, policy)
+            
+            # push context into implicit_checker stacks
+            if policy.get_vulnerability().is_implicit():
+                implicit_checker.push_source(cond.get_sources())
+                implicit_checker.push_sanitizer(cond.get_sanitizers())
+                implicit_checker.push_sanitized_source(cond.get_sanitized_sources())
+                print(implicit_checker)
+
+            symbol_table_elseif = deepcopy(symbol_table)
+
+            stmts = create_nodes(parsed_ast['stmts'], symbol_table_elseif, policy, implicit_checker)
+
+            symbol_table.add_missing_variables(symbol_table_elseif, symbol_table_elseif.get_variables())
+
+            #print(bcolors.FAIL + "Merged Symbol Table: " + str(symbol_table) + bcolors.ENDC)
+
+            # pop context out of implicit_checker stacks
+            if policy.get_vulnerability().is_implicit():
+                implicit_checker.pop_source()
+                implicit_checker.pop_sanitizer()
+                implicit_checker.pop_sanitized_source()
+                print(implicit_checker)
+
+            return Stmt_ElseIf(cond, stmts)
         # <--- FUNCTION CALL, ECHO  --->
         elif (node_type == "Expr_FuncCall") or (node_type == "Stmt_Echo"):
 

@@ -3,14 +3,14 @@
         "vulnerability": "Implicit",
         "sources": ["$x"],
         "sanitizers": [],
-        "sinks": ["f"],
+        "sinks": ["f", "g"],
         "implicit": "yes"
     },
     {
         "vulnerability": "Explicit",
         "sources": ["$x"],
         "sanitizers": [],
-        "sinks": ["f"],
+        "sinks": ["f", "g"],
         "implicit": "no"
     }
 ]

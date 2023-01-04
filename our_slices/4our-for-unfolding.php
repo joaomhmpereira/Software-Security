@@ -1,8 +1,8 @@
 <?php
     $a = 0;
-    // implicit leak $x -> f
+    // implicit leak $x -> g
     for ($x = 0; $x <= 10; $x++) {
-        f();
+        g();
     }
     // explicit leak $x -> $b -> f
     for ($b = $x; $b <= 10; $b++){
