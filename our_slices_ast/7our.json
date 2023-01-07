@@ -1,0 +1,34 @@
+[
+    {
+        "nodeType": "Stmt_Expression",
+        "attributes": {
+            "startLine": 2,
+            "endLine": 2
+        },
+        "expr": {
+            "nodeType": "Expr_AssignOp_Plus",
+            "attributes": {
+                "startLine": 2,
+                "endLine": 2
+            },
+            "var": {
+                "nodeType": "Expr_Variable",
+                "attributes": {
+                    "startLine": 2,
+                    "endLine": 2
+                },
+                "name": "sink"
+            },
+            "expr": {
+                "nodeType": "Scalar_LNumber",
+                "attributes": {
+                    "startLine": 2,
+                    "endLine": 2,
+                    "rawValue": "1",
+                    "kind": 10
+                },
+                "value": 1
+            }
+        }
+    }
+]

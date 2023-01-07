@@ -1,6 +1,6 @@
 [
     {
-        "vulnerability": "Implicit",
+        "vulnerability": "Implicit and Explicit",
         "sources": ["$x"],
         "sanitizers": [],
         "sinks": ["f", "g"],

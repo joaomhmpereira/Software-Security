@@ -38,7 +38,7 @@
             "comments": [
                 {
                     "nodeType": "Comment",
-                    "text": "\/\/ implicit leak $x -> f",
+                    "text": "\/\/ implicit leak $x -> g",
                     "line": 3,
                     "filePos": 22,
                     "tokenPos": 9,
@@ -96,10 +96,10 @@
                     "attributes": {
                         "startLine": 4,
                         "endLine": 4,
-                        "rawValue": "10",
+                        "rawValue": "0",
                         "kind": 10
                     },
-                    "value": 10
+                    "value": 0
                 }
             }
         ],
@@ -140,7 +140,7 @@
                             "endLine": 5
                         },
                         "parts": [
-                            "f"
+                            "g"
                         ]
                     },
                     "args": []
@@ -157,10 +157,10 @@
                     "nodeType": "Comment",
                     "text": "\/\/ explicit leak $x -> $b -> f",
                     "line": 7,
-                    "filePos": 105,
+                    "filePos": 104,
                     "tokenPos": 41,
                     "endLine": 7,
-                    "endFilePos": 134,
+                    "endFilePos": 133,
                     "endTokenPos": 41
                 }
             ],
