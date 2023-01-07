@@ -8,14 +8,14 @@
     },
     {
         "vulnerability": "A",
-        "source": "$boo",
+        "source": "$c",
         "sink": "e",
         "unsanitized flows": "yes",
         "sanitized flows": []
     },
     {
         "vulnerability": "A",
-        "source": "$c",
+        "source": "$boo",
         "sink": "e",
         "unsanitized flows": "yes",
         "sanitized flows": []

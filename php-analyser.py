@@ -103,15 +103,8 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
     """
     Given a json, parse it and create the corresponding AST nodes
     """
-    # print s
-    # if symbol_table:
-    #     print(bcolors.OKCYAN + "=======")
-    #     print(symbol_table)
-    #     print("=======" + bcolors.ENDC)
 
-    #print(bcolors.OKBLUE + "Inside create_nodes" + bcolors.ENDC)
     if (type(parsed_ast) == list):  # if we receive a list of instructions (list of dictionaries)
-        #print(bcolors.OKCYAN + "parsed_ast is a list" + bcolors.ENDC)
         instructions = []
         for instruction in parsed_ast:
             instructions.append(create_nodes(instruction, symbol_table, policy, implicit_checker)) #create the nodes for each instruction
@@ -121,13 +114,11 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
         return instructions
 
     elif (type(parsed_ast) == dict):    # if we receive a single instruction
-        #print(bcolors.OKCYAN + "parsed_ast is a dict" + bcolors.ENDC)
         # get the type of the node we're analyzing
         node_type = parsed_ast['nodeType']
 
         # <--- EXPRESSION --->
         if (node_type == "Stmt_Expression"):
-            #print(parsed_ast)
             print(bcolors.OKGREEN + node_type + bcolors.ENDC)
             return Stmt_Expression(create_nodes(parsed_ast['expr'], symbol_table, policy, implicit_checker))
         
@@ -141,8 +132,6 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
                 # initialized variables: remove from source
                 if not lval.is_source():
                     lval.del_source(lval.name)
-
-            #print(bcolors.WARNING + str(rval) + bcolors.ENDC)
              
             sources = policy.lub(deepcopy(lval.get_sources()), deepcopy(rval.get_sources()))
             sanitized_sources = policy.lub(deepcopy(lval.get_sanitized_sources()), deepcopy(rval.get_sanitized_sources()))
@@ -173,13 +162,10 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
                         policy.get_vulnerability().add_instance(implicit_sanitized_source, lval.get_name(), False, implicit_sanitizers_list_copy)
                         
                 for source in policy.lub(rval.get_sources(), lval.get_sources()):
-                    #print(bcolors.HEADER + "Outputing vuln without san flows" + bcolors.ENDC)
                     source_copy = deepcopy(source)
                     policy.get_vulnerability().add_instance(source_copy, lval.get_name(), True, [])                            
                 
                 for sanitized_source in rval.get_sanitized_sources():
-                    #print(bcolors.HEADER + "Outputing vuln witho san flows" + bcolors.ENDC)
-                    #print(bcolors.WARNING + "SANITIZERS ASSIGNMENT: " + str(rval.get_sanitizers()) + bcolors.ENDC)
                     sanitized_source_copy = deepcopy(sanitized_source)
                     sanitizers_list_copy = deepcopy(rval.get_sanitizers())
                     policy.get_vulnerability().add_instance(sanitized_source_copy, lval.get_name(), False, sanitizers_list_copy)
@@ -188,7 +174,6 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
         
         # <--- VARIABLE --->
         elif (node_type == "Expr_Variable"):
-            #print(parsed_ast)
             name = "$" + parsed_ast['name']
             print(bcolors.OKGREEN + node_type + " -> " + name + bcolors.ENDC)
             variable = symbol_table.get_variable(name)
@@ -222,8 +207,7 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
         
         # <--- IF --->
         elif (node_type == "Stmt_If"):
-            #print(bcolors.OKGREEN + node_type + bcolors.ENDC)
-            #print(bcolors.OKBLUE + "SYMBOL TABLE BEFORE" + str(symbol_table) + bcolors.ENDC)
+            print(bcolors.OKGREEN + node_type + bcolors.ENDC)
             cond = create_nodes(parsed_ast['cond'], symbol_table, policy)
             
             # push context into implicit_checker stacks
@@ -231,7 +215,6 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
                 implicit_checker.push_source(cond.get_sources())
                 implicit_checker.push_sanitizer(cond.get_sanitizers())
                 implicit_checker.push_sanitized_source(cond.get_sanitized_sources())
-                print(implicit_checker)
 
             symbol_table_if = deepcopy(symbol_table)
             symbol_table_else = deepcopy(symbol_table)
@@ -240,31 +223,21 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
             stmts = create_nodes(parsed_ast['stmts'], symbol_table_if, policy, implicit_checker)
             else_clause = create_nodes(parsed_ast['else'], symbol_table_else, policy, implicit_checker)
             
-            #print(bcolors.WARNING + "IF symtable " + str(symbol_table_if) + bcolors.ENDC)
-            #print(bcolors.WARNING + "ELSE symtable " + str(symbol_table_else) + bcolors.ENDC)
-
             merged_symbol_table, common_variables = symbol_table_if.merge_symbols(symbol_table_else, policy)
-            #print(bcolors.OKBLUE + "InBoth: " + str(common_variables) + bcolors.ENDC)
 
             symbol_table.add_missing_variables(merged_symbol_table, common_variables)
-            print(bcolors.FAIL + "Merged Symbol Table: " + str(merged_symbol_table) + bcolors.ENDC)
 
-            #print(bcolors.OKBLUE + "SYMBOL TABLE AFTER" + str(symbol_table) + bcolors.ENDC)
             
             # elseifs 
             elseif_list = parsed_ast['elseifs']
             elseifs = []
             for elseif in elseif_list:
-                print(bcolors.FAIL + "Merged Symbol Table BEFORE: " + str(symbol_table) + bcolors.ENDC)
-                print("Entrei elseif")
                 symbol_table_elseif = deepcopy(symbol_table_initial)
                 elseifs.append(create_nodes(elseif, symbol_table_elseif, policy, implicit_checker))
-                print(bcolors.OKBLUE + str(symbol_table_elseif) + bcolors.ENDC)
 
                 # propagate changed symbol table
                 merged_symbol_table, common_variables = symbol_table_elseif.merge_symbols(symbol_table, policy)
                 symbol_table.add_missing_variables(merged_symbol_table, common_variables)
-                print(bcolors.FAIL + "Merged Symbol Table AFTER: " + str(symbol_table) + bcolors.ENDC)
 
 
             # pop context out of implicit_checker stacks
@@ -272,7 +245,6 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
                 implicit_checker.pop_source()
                 implicit_checker.pop_sanitizer()
                 implicit_checker.pop_sanitized_source()
-                print(implicit_checker)
 
             return Stmt_If(cond, stmts, elseifs, else_clause)
 
@@ -285,7 +257,6 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
         # <--- STMT ELSEIF OR CASE--->
         elif (node_type == "Stmt_ElseIf") or (node_type == "Stmt_Case"):
             print(bcolors.OKGREEN + node_type + bcolors.ENDC)
-            print(bcolors.OKCYAN + "BEFORE ELSEIF/CASE: " + str(symbol_table) + bcolors.ENDC)
 
             cond = create_nodes(parsed_ast['cond'], symbol_table, policy)
             
@@ -294,7 +265,6 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
                 implicit_checker.push_source(cond.get_sources())
                 implicit_checker.push_sanitizer(cond.get_sanitizers())
                 implicit_checker.push_sanitized_source(cond.get_sanitized_sources())
-                print(implicit_checker)
 
             symbol_table_stmts = deepcopy(symbol_table)
 
@@ -302,14 +272,11 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
 
             symbol_table.add_missing_variables(symbol_table_stmts, symbol_table_stmts.get_variables())
 
-            #print(bcolors.FAIL + "Merged Symbol Table: " + str(symbol_table) + bcolors.ENDC)
-
             # pop context out of implicit_checker stacks
             if policy.get_vulnerability().is_implicit():
                 implicit_checker.pop_source()
                 implicit_checker.pop_sanitizer()
                 implicit_checker.pop_sanitized_source()
-                print(implicit_checker)
 
             if node_type == "Stmt_Case":
                 return Stmt_Case(cond, stmts)
@@ -347,9 +314,6 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
             # sanitized_sources contain sources from sanitized flows
             for arg in args:
                 # function sources: l.u.b. with the arg's
-                print("DEBUG ARG: " + str(arg.get_sources()))
-                print("DEBUG FUN: " + str(funcall.get_sources()))
-
                 if policy.get_vulnerability().is_implicit():
                     sources = policy.lub(sources, deepcopy(arg.get_sources()))
                     sanitized_sources = policy.lub(sanitized_sources, deepcopy(arg.get_sanitized_sources()))
@@ -380,7 +344,6 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
                         # the arg's sanitized sources are the function's
                         sanitizers_list_copy = deepcopy(arg.get_sanitizers())
                         policy.get_vulnerability().add_instance(sanitized_source, funcall.get_name(), False, sanitizers_list_copy)
-                        print("OUTPUT: " + str(policy.get_vulnerability().output))
             
             # if the function is a sanitizer: all of its sources are  now sanitized
             if funcall.is_sanitizer():
@@ -408,7 +371,6 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
                 implicit_checker.push_source(cond.get_sources())
                 implicit_checker.push_sanitizer(cond.get_sanitizers())
                 implicit_checker.push_sanitized_source(cond.get_sanitized_sources())
-                print(implicit_checker)
 
             symbol_table_switch = deepcopy(symbol_table)
 
@@ -421,7 +383,6 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
                 implicit_checker.pop_source()
                 implicit_checker.pop_sanitizer()
                 implicit_checker.pop_sanitized_source()
-                print(implicit_checker)
 
             return Stmt_Switch(cond, cases)
 
@@ -466,7 +427,6 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
                     implicit_checker.push_source(condition.get_sources())
                     implicit_checker.push_sanitizer(condition.get_sanitizers())
                     implicit_checker.push_sanitized_source(condition.get_sanitized_sources())
-                    print(implicit_checker)
 
                 stmts = create_nodes(parsed_ast['stmts'], symtable_body, policy, implicit_checker)
 
@@ -489,7 +449,6 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
                     implicit_checker.pop_source()
                     implicit_checker.pop_sanitizer()
                     implicit_checker.pop_sanitized_source()
-                    print(implicit_checker)
 
             symbol_table.add_missing_variables(last_symtable, last_symtable.get_variables())
 
@@ -525,7 +484,6 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
                     implicit_checker.push_source(sources)
                     implicit_checker.push_sanitizer(sanitizers)
                     implicit_checker.push_sanitized_source(sanitized_sources)
-                    print(implicit_checker)
                 
                 stmts = create_nodes(parsed_ast['stmts'], symtable_body, policy, implicit_checker)
                 loop = create_nodes(parsed_ast['loop'], symtable_body, policy, implicit_checker)
@@ -539,7 +497,6 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
                             implicit_checker.pop_source()
                             implicit_checker.pop_sanitizer()
                             implicit_checker.pop_sanitized_source()
-                            print(implicit_checker)
                         break
                 else:
                     last_symtable = deepcopy(symtable_body)
@@ -573,7 +530,7 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
             dim = create_nodes(parsed_ast['dim'], symbol_table, policy, implicit_checker)
             return Expr_Array_Dim_Fetch(var, dim)
 
-        #  <--- BREAK, CONTINUE,NOP, COMMENTS, ... EVERYTHING ELSE --->
+        #  <--- CONTINUE, COMMENTS, ... EVERYTHING ELSE --->
         else: # discard the node
             return None
         

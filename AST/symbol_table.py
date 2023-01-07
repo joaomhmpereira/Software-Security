@@ -60,10 +60,10 @@ class Symbol_Table:
         self.variables = commonList
                 
     def __repr__(self):
-        s = "< "
+        s = "[ "
         for var in self.variables:
             s += str(var) + " | "
-        return s + ">"
+        return s[:-2] + "]"
 
     def __eq__(self, other_symbol_table) -> bool:
         if self.__class__ == other_symbol_table.__class__:
