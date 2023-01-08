@@ -216,21 +216,25 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
             if policy.get_vulnerability().is_implicit():
                 implicit_checker.push(cond.get_sources(), cond.get_sanitizers(), cond.get_sanitized_sources())
 
+            # create copies of the original symbol_table
             symbol_table_if = deepcopy(symbol_table)
             symbol_table_else = deepcopy(symbol_table)
             symbol_table_initial = deepcopy(symbol_table)
-                        
+            
+            # visit statements in if and else bodies with a copy of the original context symbol_table
             stmts = create_nodes(parsed_ast['stmts'], symbol_table_if, policy, implicit_checker)
             else_clause = create_nodes(parsed_ast['else'], symbol_table_else, policy, implicit_checker)
             
+            # merge resulting symbol_table from if branch with resulting symbol_table from else branch
             merged_symbol_table, common_variables = symbol_table_if.merge_symbols(symbol_table_else, policy)
 
+            # add variables that had not been initialized before the if
             symbol_table.add_missing_variables(merged_symbol_table, common_variables)
             
             # elseifs 
             elseif_list = parsed_ast['elseifs']
             elseifs = []
-            for elseif in elseif_list:
+            for elseif in elseif_list:  # for each esleif use the initial symbol_table and propagate the changes
                 symbol_table_elseif = deepcopy(symbol_table_initial)
                 elseifs.append(create_nodes(elseif, symbol_table_elseif, policy, implicit_checker))
 
@@ -366,6 +370,7 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
 
             cases = create_nodes(parsed_ast['cases'], symbol_table_switch, policy, implicit_checker)
 
+            # add variables that had not been initialized before the switch
             symbol_table.add_missing_variables(symbol_table_switch, symbol_table_switch.get_variables())
 
             # pop context out of implicit_checker stacks
@@ -412,7 +417,6 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
                 condition = create_nodes(parsed_ast['cond'], symtable_body, policy, implicit_checker)
 
                 # implicit leaks: push the condition's sources, sanitizers and sanitized_sources
-                # TODO
                 if policy.get_vulnerability().is_implicit():
                     implicit_checker.push(condition.get_sources(), condition.get_sanitizers(), condition.get_sanitized_sources())
                     
