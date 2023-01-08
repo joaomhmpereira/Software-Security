@@ -69,5 +69,15 @@ class Implicit_Checker:
                 sanitizers.append(group)
         return sanitizers
 
+    def push(self, sources, sanitizers, sanitized_sources):
+        self.push_source(sources)
+        self.push_sanitizer(sanitizers)
+        self.push_sanitized_source(sanitized_sources)
+
+    def pop(self):
+        self.pop_source()
+        self.pop_sanitizer()
+        self.pop_sanitized_source()
+
     def __repr__(self) -> str:
         return 'Implicit Checker: Sources -> {}, SanSources -> {}, Sanitizers -> {}'.format(self.stack_sources, self.stack_sanitized_sources, self.stack_sanitizers)

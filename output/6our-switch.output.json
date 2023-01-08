@@ -1,6 +1,13 @@
 [
     {
         "vulnerability": "Switch_No_Implicit",
+        "source": "$d",
+        "sink": "e",
+        "unsanitized flows": "yes",
+        "sanitized flows": []
+    },
+    {
+        "vulnerability": "Switch_No_Implicit",
         "source": "$c",
         "sink": "e",
         "unsanitized flows": "yes",
@@ -14,13 +21,6 @@
         "sanitized flows": []
     },
     {
-        "vulnerability": "Switch_No_Implicit",
-        "source": "$d",
-        "sink": "e",
-        "unsanitized flows": "yes",
-        "sanitized flows": []
-    },
-    {
         "vulnerability": "Switch_With_Implicit",
         "source": "$b",
         "sink": "e",
@@ -30,13 +30,6 @@
     {
         "vulnerability": "Switch_With_Implicit",
         "source": "$c",
-        "sink": "e",
-        "unsanitized flows": "yes",
-        "sanitized flows": []
-    },
-    {
-        "vulnerability": "Switch_With_Implicit",
-        "source": "$d",
         "sink": "e",
         "unsanitized flows": "yes",
         "sanitized flows": []
@@ -44,6 +37,13 @@
     {
         "vulnerability": "Switch_With_Implicit",
         "source": "$i",
+        "sink": "e",
+        "unsanitized flows": "yes",
+        "sanitized flows": []
+    },
+    {
+        "vulnerability": "Switch_With_Implicit",
+        "source": "$d",
         "sink": "e",
         "unsanitized flows": "yes",
         "sanitized flows": []

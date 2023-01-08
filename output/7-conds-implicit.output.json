@@ -1,7 +1,7 @@
 [
     {
         "vulnerability": "A",
-        "source": "b",
+        "source": "$boo",
         "sink": "e",
         "unsanitized flows": "yes",
         "sanitized flows": []
@@ -15,7 +15,7 @@
     },
     {
         "vulnerability": "A",
-        "source": "$boo",
+        "source": "b",
         "sink": "e",
         "unsanitized flows": "yes",
         "sanitized flows": []

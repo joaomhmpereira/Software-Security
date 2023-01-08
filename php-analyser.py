@@ -98,7 +98,7 @@ def main(argv, arg):
     
     with open(output_file, 'w') as outfile:
         json.dump(output, outfile, ensure_ascii=False, indent=4)
-        
+   
 def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=None):
     """
     Given a json, parse it and create the corresponding AST nodes
@@ -191,6 +191,7 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
             right = create_nodes(parsed_ast['right'], symbol_table, policy, implicit_checker)
             expr = Binop_Expr(left, right)
             
+            # set the expression's sources, sanitized_sources and sanitizers
             expr.set_sources(policy.lub(left.get_sources(), right.get_sources()))
             expr.set_sanitized_sources(policy.lub(left.get_sanitized_sources(), right.get_sanitized_sources()))
             sanitizers = []
@@ -198,6 +199,7 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
                 if sanitizer not in sanitizers:
                     sanitizers.append(sanitizer)        
             expr.set_sanitizers(sanitizers)
+            
             return expr
 
         # <--- SCALARS  --->
@@ -212,9 +214,7 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
             
             # push context into implicit_checker stacks
             if policy.get_vulnerability().is_implicit():
-                implicit_checker.push_source(cond.get_sources())
-                implicit_checker.push_sanitizer(cond.get_sanitizers())
-                implicit_checker.push_sanitized_source(cond.get_sanitized_sources())
+                implicit_checker.push(cond.get_sources(), cond.get_sanitizers(), cond.get_sanitized_sources())
 
             symbol_table_if = deepcopy(symbol_table)
             symbol_table_else = deepcopy(symbol_table)
@@ -226,7 +226,6 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
             merged_symbol_table, common_variables = symbol_table_if.merge_symbols(symbol_table_else, policy)
 
             symbol_table.add_missing_variables(merged_symbol_table, common_variables)
-
             
             # elseifs 
             elseif_list = parsed_ast['elseifs']
@@ -239,12 +238,9 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
                 merged_symbol_table, common_variables = symbol_table_elseif.merge_symbols(symbol_table, policy)
                 symbol_table.add_missing_variables(merged_symbol_table, common_variables)
 
-
             # pop context out of implicit_checker stacks
             if policy.get_vulnerability().is_implicit():
-                implicit_checker.pop_source()
-                implicit_checker.pop_sanitizer()
-                implicit_checker.pop_sanitized_source()
+                implicit_checker.pop()
 
             return Stmt_If(cond, stmts, elseifs, else_clause)
 
@@ -262,10 +258,8 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
             
             # push context into implicit_checker stacks
             if policy.get_vulnerability().is_implicit():
-                implicit_checker.push_source(cond.get_sources())
-                implicit_checker.push_sanitizer(cond.get_sanitizers())
-                implicit_checker.push_sanitized_source(cond.get_sanitized_sources())
-
+                implicit_checker.push(cond.get_sources(), cond.get_sanitizers(), cond.get_sanitized_sources())
+            
             symbol_table_stmts = deepcopy(symbol_table)
 
             stmts = create_nodes(parsed_ast['stmts'], symbol_table_stmts, policy, implicit_checker)
@@ -274,9 +268,7 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
 
             # pop context out of implicit_checker stacks
             if policy.get_vulnerability().is_implicit():
-                implicit_checker.pop_source()
-                implicit_checker.pop_sanitizer()
-                implicit_checker.pop_sanitized_source()
+                implicit_checker.pop()
 
             if node_type == "Stmt_Case":
                 return Stmt_Case(cond, stmts)
@@ -368,10 +360,8 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
             
             # push context into implicit_checker stacks
             if policy.get_vulnerability().is_implicit():
-                implicit_checker.push_source(cond.get_sources())
-                implicit_checker.push_sanitizer(cond.get_sanitizers())
-                implicit_checker.push_sanitized_source(cond.get_sanitized_sources())
-
+                implicit_checker.push(cond.get_sources(), cond.get_sanitizers(), cond.get_sanitized_sources())
+                
             symbol_table_switch = deepcopy(symbol_table)
 
             cases = create_nodes(parsed_ast['cases'], symbol_table_switch, policy, implicit_checker)
@@ -380,9 +370,7 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
 
             # pop context out of implicit_checker stacks
             if policy.get_vulnerability().is_implicit():
-                implicit_checker.pop_source()
-                implicit_checker.pop_sanitizer()
-                implicit_checker.pop_sanitized_source()
+                implicit_checker.pop()
 
             return Stmt_Switch(cond, cases)
 
@@ -418,38 +406,37 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
 
             symtable_body = deepcopy(symbol_table)
             
-            #Special case when vulnerabilities are only detected with multiple body loop iterations
             last_symtable = None
+            # we iterate the node several times, because taintedness from can spread
             while True:
                 condition = create_nodes(parsed_ast['cond'], symtable_body, policy, implicit_checker)
 
+                # implicit leaks: push the condition's sources, sanitizers and sanitized_sources
+                # TODO
                 if policy.get_vulnerability().is_implicit():
-                    implicit_checker.push_source(condition.get_sources())
-                    implicit_checker.push_sanitizer(condition.get_sanitizers())
-                    implicit_checker.push_sanitized_source(condition.get_sanitized_sources())
-
+                    implicit_checker.push(condition.get_sources(), condition.get_sanitizers(), condition.get_sanitized_sources())
+                    
                 stmts = create_nodes(parsed_ast['stmts'], symtable_body, policy, implicit_checker)
 
                 if last_symtable is not None:
                     oldLastSymtable = deepcopy(last_symtable)
                     last_symtable, _ = last_symtable.merge_symbols(symtable_body, policy)
+                    
+                    # if merging the current symtable with the previous changed nothing, we can leave
                     if oldLastSymtable == last_symtable:
                         # pop context out of implicit_checker stacks
                         if policy.get_vulnerability().is_implicit():
-                            implicit_checker.pop_source()
-                            implicit_checker.pop_sanitizer()
-                            implicit_checker.pop_sanitized_source()
-                            print(implicit_checker)
+                            implicit_checker.pop()
                         break
+                # first iteration
                 else:
                     last_symtable = deepcopy(symtable_body)
                 
                 # pop context out of implicit_checker stacks
                 if policy.get_vulnerability().is_implicit():
-                    implicit_checker.pop_source()
-                    implicit_checker.pop_sanitizer()
-                    implicit_checker.pop_sanitized_source()
+                    implicit_checker.pop()
 
+            # add what's new from the execution of the loop
             symbol_table.add_missing_variables(last_symtable, last_symtable.get_variables())
 
             return Stmt_While(condition, stmts)
@@ -481,9 +468,7 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
 
                 # push context into implicit_checker stack
                 if policy.get_vulnerability().is_implicit():
-                    implicit_checker.push_source(sources)
-                    implicit_checker.push_sanitizer(sanitizers)
-                    implicit_checker.push_sanitized_source(sanitized_sources)
+                    implicit_checker.push(condition.get_sources(), condition.get_sanitizers(), condition.get_sanitized_sources())
                 
                 stmts = create_nodes(parsed_ast['stmts'], symtable_body, policy, implicit_checker)
                 loop = create_nodes(parsed_ast['loop'], symtable_body, policy, implicit_checker)
@@ -494,9 +479,7 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
                     if oldLastSymtable == last_symtable:
                         # pop context out of implicit_checker stacks
                         if policy.get_vulnerability().is_implicit():
-                            implicit_checker.pop_source()
-                            implicit_checker.pop_sanitizer()
-                            implicit_checker.pop_sanitized_source()
+                            implicit_checker.pop()
                         break
                 else:
                     last_symtable = deepcopy(symtable_body)
