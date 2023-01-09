@@ -128,13 +128,20 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
             rval = create_nodes(parsed_ast['expr'], symbol_table, policy, implicit_checker)
             lval = create_nodes(parsed_ast['var'], symbol_table, policy, implicit_checker)
             
+            # Only remove variable from being a self source on assigns
+            # i.e. not on += operations
             if (node_type == "Expr_Assign"):
                 # initialized variables: remove from source
                 if not lval.is_source():
                     lval.del_source(lval.name)
-             
+            
+            # Join sources of rval and lval
             sources = policy.lub(deepcopy(lval.get_sources()), deepcopy(rval.get_sources()))
+            
+            # Join sanitized sources of rval and lval
             sanitized_sources = policy.lub(deepcopy(lval.get_sanitized_sources()), deepcopy(rval.get_sanitized_sources()))
+
+            # Propagate sanitizers to lval
             for sanitizer in rval.get_sanitizers():
                 lval.add_sanitizer(sanitizer)
                     
@@ -145,13 +152,15 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
                 for implicit_sanitizer in implicit_checker.get_flat_sanitizers():
                     lval.add_sanitizer(implicit_sanitizer)
 
+            # Propagate sources to lval
             lval.set_sources(sources)
             print("SOURCES: " + str(lval.get_sources()))
             
+            # Propagate sanitized sources to lval
             lval.set_sanitized_sources(sanitized_sources)
             print("SANITIZED SOURCES: " + str(sanitized_sources))
 
-            # explicit leaks
+            # eOutput vulnerabilities
             if lval.is_sink():
                 if policy.get_vulnerability().is_implicit():    # output implicit vulnerabilities
                     for implicit_source in implicit_checker.get_flat_sources():
@@ -160,7 +169,8 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
                     for implicit_sanitized_source in implicit_checker.get_flat_sanitized_sources():
                         implicit_sanitizers_list_copy = deepcopy(implicit_checker.get_flat_sanitizers())
                         policy.get_vulnerability().add_instance(implicit_sanitized_source, lval.get_name(), False, implicit_sanitizers_list_copy)
-                        
+
+                # output explicit vulnerabilities        
                 for source in policy.lub(rval.get_sources(), lval.get_sources()):
                     source_copy = deepcopy(source)
                     policy.get_vulnerability().add_instance(source_copy, lval.get_name(), True, [])                            
