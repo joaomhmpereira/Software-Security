@@ -40,5 +40,12 @@
         "sanitizers": [],
         "sinks": ["include"],
         "implicit": "yes"
+    },
+    {
+        "vulnerability": "General Script Injection",
+        "sources": ["$_GET", "$_POST", "$_COOKIE"],
+        "sanitizers": [],
+        "sinks": ["fopen", "exec"],
+        "implicit": "yes" 
     }
 ]
