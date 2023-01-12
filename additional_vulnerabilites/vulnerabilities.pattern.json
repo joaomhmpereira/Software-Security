@@ -1,49 +1,49 @@
 [
     {
         "vulnerability": "Microsoft Server SQL Injection",
-        "sources": ["$_GET", "$_POST", "$_COOKIE"],
+        "sources": ["$_GET", "$_POST", "$_COOKIE", "$_REQUEST", "$_SERVER", "$_FILES"],
         "sanitizers": ["sqlsrv_prepare"],
         "sinks": ["sqlsrv_query"],
         "implicit": "yes"
     },
     {
         "vulnerability": "SQLite SQL Injection",
-        "sources": ["$_GET", "$_POST", "$_COOKIE"],
+        "sources": ["$_GET", "$_POST", "$_COOKIE", "$_REQUEST", "$_SERVER", "$_FILES"],
         "sanitizers": ["escapeString"],
         "sinks": ["exec", "query", "querySingle"],
         "implicit": "yes"
     },
     {
         "vulnerability": "Command Injection",
-        "sources": ["$_GET", "$_POST", "$_COOKIE"],
-        "sanitizers": ["filter_input"],
+        "sources": ["$_GET", "$_POST", "$_COOKIE", "$_REQUEST", "$_SERVER", "$_FILES"],
+        "sanitizers": ["escapeshellcmd", "escapeshellarg"],
         "sinks": ["exec", "passthru", "system"],
         "implicit": "yes" 
     },
     {
         "vulnerability": "XSS",
-        "sources": ["$_GET", "$_POST", "$_COOKIE"],
-        "sanitizers": ["htmlspecialchars", "filter_input", "urlencode"],
+        "sources": ["$_GET", "$_POST", "$_COOKIE", "$_REQUEST", "$_SERVER", "$_FILES"],
+        "sanitizers": ["strip_tags", "htmlspecialchars", "filter_input", "filter_var", "urlencode"],
         "sinks": ["echo"],
         "implicit": "yes"
     },
     {
         "vulnerability": "Object Injection",
-        "sources": ["$_GET", "$_POST", "$_COOKIE"],
+        "sources": ["$_GET", "$_POST", "$_COOKIE", "$_REQUEST", "$_SERVER", "$_FILES"],
         "sanitizers": [],
         "sinks": ["unserialize"],
         "implicit": "yes"
     },
     {
         "vulnerability": "File inclusion",
-        "sources": ["$_GET", "$_POST", "$_COOKIE"],
+        "sources": ["$_GET", "$_POST", "$_COOKIE", "$_REQUEST", "$_SERVER", "$_FILES"],
         "sanitizers": [],
         "sinks": ["include"],
         "implicit": "yes"
     },
     {
         "vulnerability": "General Script Injection",
-        "sources": ["$_GET", "$_POST", "$_COOKIE"],
+        "sources": ["$_GET", "$_POST", "$_COOKIE", "$_REQUEST", "$_SERVER", "$_FILES"],
         "sanitizers": [],
         "sinks": ["fopen", "exec"],
         "implicit": "yes" 
