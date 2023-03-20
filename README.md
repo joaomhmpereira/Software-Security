@@ -2,6 +2,8 @@
 
 This repository contains work developed in the Software Security masters course @ IST.
 
+Final grade: 19.3/20.
+
 Author | Github
 -------|-------
 Leonor Barreiros      | https://github.com/leonormbarreiros
