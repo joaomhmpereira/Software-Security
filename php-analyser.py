@@ -220,7 +220,7 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
         # <--- IF --->
         elif (node_type == "Stmt_If"):
             print(bcolors.OKGREEN + node_type + bcolors.ENDC)
-            cond = create_nodes(parsed_ast['cond'], symbol_table, policy)
+            cond = create_nodes(parsed_ast['cond'], symbol_table, policy, implicit_checker)
             
             # push context into implicit_checker stacks
             if policy.get_vulnerability().is_implicit():
@@ -268,7 +268,7 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
         elif (node_type == "Stmt_ElseIf") or (node_type == "Stmt_Case"):
             print(bcolors.OKGREEN + node_type + bcolors.ENDC)
 
-            cond = create_nodes(parsed_ast['cond'], symbol_table, policy)
+            cond = create_nodes(parsed_ast['cond'], symbol_table, policy, implicit_checker)
             
             # push context into implicit_checker stacks
             if policy.get_vulnerability().is_implicit():
@@ -370,7 +370,7 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
         # <--- STMT SWITCH --->
         elif (node_type == "Stmt_Switch"):
 
-            cond = create_nodes(parsed_ast['cond'], symbol_table, policy)
+            cond = create_nodes(parsed_ast['cond'], symbol_table, policy, implicit_checker)
             
             # push context into implicit_checker stacks
             if policy.get_vulnerability().is_implicit():
@@ -391,8 +391,8 @@ def create_nodes(parsed_ast, symbol_table=None, policy=None, implicit_checker=No
 
         # <--- STMT CASE --->
         elif (node_type == "Stmt_Case"):
-            cond = create_nodes(parsed_ast['cond'], symbol_table, policy)
-            stmts = create_nodes(parsed_ast['stmts']), symbol_table, policy
+            cond = create_nodes(parsed_ast['cond'], symbol_table, policy, implicit_checker)
+            stmts = create_nodes(parsed_ast['stmts'], symbol_table, policy, implicit_checker)
             return Stmt_Case(cond, stmts)
 
         # <--- NAME --->
